@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/Tourgineers/static/css/main.c47c866f.css",
+    "main.js": "/Tourgineers/static/js/main.4d44572c.js",
+    "static/js/787.fa50f98d.chunk.js": "/Tourgineers/static/js/787.fa50f98d.chunk.js",
+    "index.html": "/Tourgineers/index.html",
+    "main.c47c866f.css.map": "/Tourgineers/static/css/main.c47c866f.css.map",
+    "main.4d44572c.js.map": "/Tourgineers/static/js/main.4d44572c.js.map",
+    "787.fa50f98d.chunk.js.map": "/Tourgineers/static/js/787.fa50f98d.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.c47c866f.css",
+    "static/js/main.4d44572c.js"
+  ]
+}

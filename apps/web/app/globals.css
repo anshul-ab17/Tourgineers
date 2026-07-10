@@ -1,0 +1,553 @@
+:root {
+  --white: #ffffff;
+  --grey200: #f7f7f7; /* Off-white hover */
+  --foggy: #6a6a6a; /* Muted text */
+  --hof: #222222; /* Primary dark text */
+  --rausch: #ff385c; /* Signature coral-red */
+  --bobo: #b0b0b0;
+  --deco: #dddddd;
+  --grey500: #c1c1c1;
+
+  --font-cereal: "Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif;
+  
+  /* Corners */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 9px;
+  --radius-xl: 14px;
+  --radius-card: 20px;
+  --radius-pill: 32px;
+  --radius-circle-50: 50px;
+  --radius-full: 100px;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  color: var(--hof);
+  background-color: var(--white);
+  scroll-behavior: smooth;
+  font-family: var(--font-cereal), sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--white);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--deco);
+  border-radius: var(--radius-pill);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--bobo);
+}
+
+/* Typography styles matching spec */
+h1 {
+  font-family: var(--font-cereal), sans-serif;
+  font-size: clamp(24px, 4vw, 36px);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--hof);
+  letter-spacing: -0.5px;
+}
+
+h2 {
+  font-family: var(--font-cereal), sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 26px;
+  color: var(--hof);
+  letter-spacing: -0.2px;
+}
+
+h3 {
+  font-family: var(--font-cereal), sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 20px;
+  color: var(--hof);
+}
+
+h4 {
+  font-family: var(--font-cereal), sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 18px;
+  color: var(--hof);
+}
+
+p {
+  font-family: var(--font-cereal), sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  color: var(--foggy);
+}
+
+/* Container */
+.airbnb-container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Category item */
+.category-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 0;
+  color: var(--foggy);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s ease;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.category-item:hover {
+  color: var(--hof);
+  border-bottom-color: var(--deco);
+}
+
+.category-item.active {
+  color: var(--hof);
+  border-bottom-color: var(--hof);
+}
+
+/* Pill Search bar */
+.search-pill-container {
+  display: flex;
+  align-items: center;
+  background: var(--white);
+  border: 1px solid var(--deco);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+  padding: 8px 8px 8px 24px;
+  max-width: 800px;
+  width: 100%;
+  transition: box-shadow 0.2s ease, background-color 0.2s;
+  margin: 0 auto;
+  position: relative;
+}
+
+.search-pill-container:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.search-field-pill {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  border: none;
+  background: transparent;
+  outline: none;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.search-field-pill:hover {
+  background-color: var(--grey200);
+}
+
+.search-field-pill.active-focus {
+  background-color: var(--white);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.search-field-pill label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--hof);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+  letter-spacing: 0.5px;
+}
+
+.search-field-pill input {
+  font-family: var(--font-cereal), sans-serif;
+  font-size: 14px;
+  color: var(--hof);
+  background: transparent;
+  border: none;
+  outline: none;
+  font-weight: 400;
+  width: 100%;
+}
+
+.search-divider {
+  width: 1px;
+  height: 28px;
+  background-color: var(--deco);
+  margin: 0 8px;
+}
+
+.search-submit-btn {
+  background: var(--rausch);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-full);
+  padding: 12px 24px;
+  font-family: var(--font-cereal), sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  flex-shrink: 0;
+}
+
+.search-submit-btn:hover {
+  background-color: #e02f53;
+}
+
+.search-submit-btn:active {
+  transform: scale(0.95);
+}
+
+/* Custom Dropdown Modals */
+.search-dropdown-modal {
+  position: absolute;
+  top: 76px;
+  background: var(--white);
+  border: 1px solid var(--deco);
+  border-radius: var(--radius-card);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+  padding: 24px;
+  z-index: 50;
+  animation: dropdownFade 0.2s ease;
+}
+
+@keyframes dropdownFade {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.suggested-dest-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  border-radius: var(--radius-xl);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.suggested-dest-item:hover {
+  background-color: var(--grey200);
+}
+
+/* Card Design */
+.airbnb-card {
+  background: var(--white);
+  border: 1px solid var(--deco);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  padding: 16px;
+}
+
+.airbnb-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+  border-color: var(--bobo);
+}
+
+/* Interactive Tabs / Sidebar Console matching Airbnb */
+.browser-saas-airbnb {
+  width: 100%;
+  background: var(--white);
+  border: 1px solid var(--deco);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
+}
+
+.browser-header-saas {
+  height: 54px;
+  background: var(--grey200);
+  border-bottom: 1px solid var(--deco);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+}
+
+.browser-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.browser-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  background-color: var(--bobo);
+}
+
+.browser-url-bar {
+  background: var(--white);
+  border: 1px solid var(--deco);
+  border-radius: var(--radius-pill);
+  height: 32px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  font-size: 12px;
+  color: var(--foggy);
+  min-width: 280px;
+  gap: 8px;
+}
+
+.browser-body-saas {
+  min-height: 520px;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+}
+
+@media (max-width: 768px) {
+  .browser-body-saas {
+    grid-template-columns: 1fr;
+  }
+}
+
+.browser-sidebar-saas {
+  background: var(--grey200);
+  border-right: 1px solid var(--deco);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar-btn-saas {
+  background: transparent;
+  border: none;
+  color: var(--foggy);
+  padding: 12px 16px;
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.sidebar-btn-saas:hover {
+  background: var(--white);
+  color: var(--hof);
+}
+
+.sidebar-btn-saas.active {
+  background: var(--white);
+  color: var(--rausch);
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--deco);
+}
+
+.browser-content-saas {
+  padding: 28px;
+  background: var(--white);
+}
+
+/* Primary CTA Button style */
+.airbnb-btn-primary {
+  background: var(--rausch);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.airbnb-btn-primary:hover {
+  background-color: #e02f53;
+}
+
+.airbnb-btn-primary:active {
+  transform: scale(0.98);
+}
+
+.airbnb-btn-secondary {
+  background: var(--white);
+  color: var(--hof);
+  border: 1px solid var(--bobo);
+  border-radius: var(--radius-md);
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.airbnb-btn-secondary:hover {
+  background-color: var(--grey200);
+  border-color: var(--hof);
+}
+
+/* Timeline & Lists */
+.timeline-item {
+  border-left: 2px solid var(--deco);
+  padding-left: 24px;
+  margin-left: 8px;
+  position: relative;
+  padding-bottom: 24px;
+}
+
+.timeline-item:last-child {
+  border-left: none;
+  padding-bottom: 0;
+}
+
+.timeline-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-full);
+  background-color: var(--rausch);
+  position: absolute;
+  left: -7px;
+  top: 4px;
+  border: 2px solid var(--white);
+}
+
+/* Custom Checkbox */
+.custom-checkbox {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--bobo);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.custom-checkbox.checked {
+  background-color: var(--rausch);
+  border-color: var(--rausch);
+}
+
+/* Guest favourite bubble badge */
+.guest-fav-badge {
+  background: var(--white);
+  color: var(--hof);
+  font-weight: 700;
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  display: inline-block;
+  border: 1px solid rgba(0,0,0,0.04);
+}
+
+/* Input Fields inside Form */
+.saas-input {
+  background: var(--white);
+  border: 1px solid var(--deco);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  color: var(--hof);
+  outline: none;
+  font-family: var(--font-cereal), sans-serif;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.saas-input:focus {
+  border-color: var(--rausch);
+}
+
+.saas-select {
+  background: var(--white);
+  border: 1px solid var(--deco);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  color: var(--hof);
+  outline: none;
+  font-family: var(--font-cereal), sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.saas-select:focus {
+  border-color: var(--rausch);
+}
+
+/* Calendar Date Grid */
+.calendar-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  text-align: center;
+  margin-top: 12px;
+}
+
+.calendar-day-header {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--foggy);
+  padding: 6px 0;
+}
+
+.calendar-day-number {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--hof);
+  height: 32px;
+  width: 32px;
+  line-height: 32px;
+  margin: 0 auto;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.calendar-day-number:hover {
+  background-color: var(--grey200);
+}
+
+.calendar-day-number.selected {
+  background-color: var(--rausch);
+  color: var(--white);
+  font-weight: 700;
+}
+
+.calendar-day-number.empty {
+  cursor: default;
+  background: transparent;
+}

@@ -30,7 +30,7 @@ import {
 // Types
 type TabType = "ai-planner" | "budget" | "checklist" | "friends";
 type DropdownType = "where" | "when" | "who" | null;
-type HeaderTabType = "homes" | "planner";
+type HeaderTabType = "homes" | "planner" | "host";
 
 interface ItineraryItem {
   time: string;
@@ -50,6 +50,7 @@ interface Expense {
 
 interface ListingCard {
   id: string;
+  city?: string;
   title: string;
   type: string;
   price: string;
@@ -96,17 +97,22 @@ export default function Home() {
   });
 
   // --- Feature 2: Budget State ---
-  const [expenses, setExpenses] = useState<Expense[]>([
-    { id: "1", city: "Amsterdam", description: "Anne Frank House tickets", amount: 48, currency: "EUR", paidBy: "Alex" },
-    { id: "2", city: "Amsterdam", description: "Jordaan Boutique Loft booking", amount: 590, currency: "EUR", paidBy: "Emily" },
-    { id: "3", city: "Amsterdam", description: "Van Gogh Museum Group Pass", amount: 65, currency: "EUR", paidBy: "Sophia" },
-    { id: "4", city: "Amsterdam", description: "Damrak Candlelight Canal cruise", amount: 110, currency: "EUR", paidBy: "Alex" }
-  ]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [expDescription, setExpDescription] = useState("");
   const [expAmount, setExpAmount] = useState("");
-  const [expPaidBy, setExpPaidBy] = useState("Alex");
+  const [expPaidBy, setExpPaidBy] = useState("");
   const [expCurrency, setExpCurrency] = useState<"USD" | "INR" | "EUR">("USD");
   const [displayCurrency, setDisplayCurrency] = useState<"USD" | "INR" | "EUR">("USD");
+
+  // --- Host Admin Panel State ---
+  const [customListings, setCustomListings] = useState<ListingCard[]>([]);
+  const [hostTitle, setHostTitle] = useState("");
+  const [hostCity, setHostCity] = useState("Amsterdam");
+  const [hostPrice, setHostPrice] = useState("");
+  const [hostType, setHostType] = useState("Entire rental unit");
+  const [hostImageUrl, setHostImageUrl] = useState("");
+  const [hostError, setHostError] = useState("");
+  const [hostSuccess, setHostSuccess] = useState("");
 
   const exchangeRates = {
     USD: 83,
@@ -183,7 +189,7 @@ export default function Home() {
       .catch(err => console.log("Express backend query failed, running offline fallback mode."));
   }, [destInput]);
 
-  // Fetch initial checklist and messages on mount
+  // Fetch initial checklist, messages and listings on mount
   useEffect(() => {
     // 1. Fetch Checklist
     fetch(`${API_BASE}/checklist`)
@@ -200,6 +206,14 @@ export default function Home() {
         if (Array.isArray(data) && data.length > 0) setChatMessages(data);
       })
       .catch(err => {});
+
+    // 3. Fetch Listings
+    fetch(`${API_BASE}/listings`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setCustomListings(data);
+      })
+      .catch(err => {});
   }, []);
 
   // Click outside listener for search dropdowns
@@ -213,57 +227,78 @@ export default function Home() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Realistic city listings database (6 properties for each city)
-  const cityListingsData: Record<string, ListingCard[]> = {
+  // Predefined realistic city listings database (6 properties for each city)
+  const initialCityListingsData: Record<string, ListingCard[]> = {
     Amsterdam: [
-      { id: "ams-1", title: "Canal View Loft in Jordaan", type: "Entire rental unit", price: "₹12,450", rating: "4.96", imageUrl: "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=600&q=80", isFav: true },
-      { id: "ams-2", title: "Historic Apartment near Rijksmuseum", type: "Entire loft", price: "₹14,200", rating: "4.98", imageUrl: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=600&q=80", isFav: true },
-      { id: "ams-3", title: "Charming Houseboat on Amstel River", type: "Houseboat", price: "₹16,800", rating: "4.92", imageUrl: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=600&q=80", isFav: false },
-      { id: "ams-4", title: "Bright Scandinavian Studio in De Pijp", type: "Entire studio", price: "₹9,800", rating: "4.88", imageUrl: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=600&q=80", isFav: false },
-      { id: "ams-5", title: "Designer Flat overlooking Vondelpark", type: "Entire condo", price: "₹15,500", rating: "4.95", imageUrl: "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=600&q=80", isFav: true },
-      { id: "ams-6", title: "Industrial Penthouse in Amsterdam Noord", type: "Entire loft", price: "₹18,900", rating: "4.90", imageUrl: "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=600&q=80", isFav: false }
+      { id: "ams-1", city: "Amsterdam", title: "Canal View Loft in Jordaan", type: "Entire rental unit", price: "₹12,450", rating: "4.96", imageUrl: "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=600&q=80", isFav: true },
+      { id: "ams-2", city: "Amsterdam", title: "Historic Apartment near Rijksmuseum", type: "Entire loft", price: "₹14,200", rating: "4.98", imageUrl: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=600&q=80", isFav: true },
+      { id: "ams-3", city: "Amsterdam", title: "Charming Houseboat on Amstel River", type: "Houseboat", price: "₹16,800", rating: "4.92", imageUrl: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=600&q=80", isFav: false },
+      { id: "ams-4", city: "Amsterdam", title: "Bright Scandinavian Studio in De Pijp", type: "Entire studio", price: "₹9,800", rating: "4.88", imageUrl: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=600&q=80", isFav: false },
+      { id: "ams-5", city: "Amsterdam", title: "Designer Flat overlooking Vondelpark", type: "Entire condo", price: "₹15,500", rating: "4.95", imageUrl: "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=600&q=80", isFav: true },
+      { id: "ams-6", city: "Amsterdam", title: "Industrial Penthouse in Amsterdam Noord", type: "Entire loft", price: "₹18,900", rating: "4.90", imageUrl: "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=600&q=80", isFav: false }
     ],
     Delhi: [
-      { id: "del-1", title: "Heritage Haveli Suite in South Delhi", type: "Private room in home", price: "₹4,500", rating: "4.94", imageUrl: "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=600&q=80", isFav: true },
-      { id: "del-2", title: "Modern Terrace Apartment in Hauz Khas", type: "Entire rental unit", price: "₹5,200", rating: "4.90", imageUrl: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=600&q=80", isFav: false },
-      { id: "del-3", title: "Elegant Greenery Bungalow in Lutyens", type: "Entire bungalow", price: "₹12,800", rating: "4.97", imageUrl: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=600&q=80", isFav: true },
-      { id: "del-4", title: "Artistic Studio with Lotus Temple views", type: "Entire studio", price: "₹3,900", rating: "4.86", imageUrl: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=600&q=80", isFav: false },
-      { id: "del-5", title: "Cozy Garden Suite near Connaught Place", type: "Entire guest suite", price: "₹6,500", rating: "4.89", imageUrl: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=600&q=80", isFav: true },
-      { id: "del-6", title: "Sleek Modern Loft in Vasant Vihar", type: "Entire loft", price: "₹8,900", rating: "4.91", imageUrl: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=600&q=80", isFav: false }
+      { id: "del-1", city: "Delhi", title: "Heritage Haveli Suite in South Delhi", type: "Private room in home", price: "₹4,500", rating: "4.94", imageUrl: "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=600&q=80", isFav: true },
+      { id: "del-2", city: "Delhi", title: "Modern Terrace Apartment in Hauz Khas", type: "Entire rental unit", price: "₹5,200", rating: "4.90", imageUrl: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=600&q=80", isFav: false },
+      { id: "del-3", city: "Delhi", title: "Elegant Greenery Bungalow in Lutyens", type: "Entire bungalow", price: "₹12,800", rating: "4.97", imageUrl: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=600&q=80", isFav: true },
+      { id: "del-4", city: "Delhi", title: "Artistic Studio with Lotus Temple views", type: "Entire studio", price: "₹3,900", rating: "4.86", imageUrl: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=600&q=80", isFav: false },
+      { id: "del-5", city: "Delhi", title: "Cozy Garden Suite near Connaught Place", type: "Entire guest suite", price: "₹6,500", rating: "4.89", imageUrl: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=600&q=80", isFav: true },
+      { id: "del-6", city: "Delhi", title: "Sleek Modern Loft in Vasant Vihar", type: "Entire loft", price: "₹8,900", rating: "4.91", imageUrl: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=600&q=80", isFav: false }
     ],
     Tokyo: [
-      { id: "tok-1", title: "Traditional Tatami Ryokan in Asakusa", type: "Private room in ryokan", price: "₹8,500", rating: "4.97", imageUrl: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=600&q=80", isFav: true },
-      { id: "tok-2", title: "Compact High-Tech Studio in Shibuya", type: "Entire rental unit", price: "₹11,200", rating: "4.91", imageUrl: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=600&q=80", isFav: false },
-      { id: "tok-3", title: "Skyscraper Skyline Flat in Shinjuku", type: "Entire condo", price: "₹15,600", rating: "4.95", imageUrl: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=600&q=80", isFav: true },
-      { id: "tok-4", title: "Zen Garden Oasis in Meguro", type: "Entire residential home", price: "₹18,000", rating: "4.98", imageUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80", isFav: true },
-      { id: "tok-5", title: "Minimalist Loft near Roppongi Hills", type: "Entire loft", price: "₹14,900", rating: "4.88", imageUrl: "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=600&q=80", isFav: false },
-      { id: "tok-6", title: "Modern Design Penthouse in Ginza", type: "Entire rental unit", price: "₹22,000", rating: "4.96", imageUrl: "https://images.unsplash.com/photo-1507089947368-19c1da9775ae?auto=format&fit=crop&w=600&q=80", isFav: false }
+      { id: "tok-1", city: "Tokyo", title: "Traditional Tatami Ryokan in Asakusa", type: "Private room in ryokan", price: "₹8,500", rating: "4.97", imageUrl: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=600&q=80", isFav: true },
+      { id: "tok-2", city: "Tokyo", title: "Compact High-Tech Studio in Shibuya", type: "Entire rental unit", price: "₹11,200", rating: "4.91", imageUrl: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=600&q=80", isFav: false },
+      { id: "tok-3", city: "Tokyo", title: "Skyscraper Skyline Flat in Shinjuku", type: "Entire condo", price: "₹15,600", rating: "4.95", imageUrl: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=600&q=80", isFav: true },
+      { id: "tok-4", city: "Tokyo", title: "Zen Garden Oasis in Meguro", type: "Entire residential home", price: "₹18,000", rating: "4.98", imageUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80", isFav: true },
+      { id: "tok-5", city: "Tokyo", title: "Minimalist Loft near Roppongi Hills", type: "Entire loft", price: "₹14,900", rating: "4.88", imageUrl: "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=600&q=80", isFav: false },
+      { id: "tok-6", city: "Tokyo", title: "Modern Design Penthouse in Ginza", type: "Entire rental unit", price: "₹22,000", rating: "4.96", imageUrl: "https://images.unsplash.com/photo-1507089947368-19c1da9775ae?auto=format&fit=crop&w=600&q=80", isFav: false }
     ],
     Singapore: [
-      { id: "sin-1", title: "Marina Bay View Penthouse", type: "Entire condominium", price: "₹28,500", rating: "4.98", imageUrl: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=600&q=80", isFav: true },
-      { id: "sin-2", title: "Luxury Sky Loft in Orchard Road", type: "Entire condo", price: "₹19,800", rating: "4.93", imageUrl: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=600&q=80", isFav: false },
-      { id: "sin-3", title: "Chic Heritage Shophouse in Chinatown", type: "Entire townhouse", price: "₹15,400", rating: "4.91", imageUrl: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=600&q=80", isFav: true },
-      { id: "sin-4", title: "Modern Condominium with Infinity Pool", type: "Entire rental unit", price: "₹12,900", rating: "4.89", imageUrl: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=600&q=80", isFav: false },
-      { id: "sin-5", title: "Designer Garden Suite in Sentosa", type: "Entire guest suite", price: "₹24,000", rating: "4.96", imageUrl: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=600&q=80", isFav: true },
-      { id: "sin-6", title: "Luxury High-Rise Suite in Bugis", type: "Entire rental unit", price: "₹16,500", rating: "4.92", imageUrl: "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=600&q=80", isFav: false }
+      { id: "sin-1", city: "Singapore", title: "Marina Bay View Penthouse", type: "Entire condominium", price: "₹28,500", rating: "4.98", imageUrl: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=600&q=80", isFav: true },
+      { id: "sin-2", city: "Singapore", title: "Luxury Sky Loft in Orchard Road", type: "Entire condo", price: "₹19,800", rating: "4.93", imageUrl: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=600&q=80", isFav: false },
+      { id: "sin-3", city: "Singapore", title: "Chic Heritage Shophouse in Chinatown", type: "Entire townhouse", price: "₹15,400", rating: "4.91", imageUrl: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=600&q=80", isFav: true },
+      { id: "sin-4", city: "Singapore", title: "Modern Condominium with Infinity Pool", type: "Entire rental unit", price: "₹12,900", rating: "4.89", imageUrl: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=600&q=80", isFav: false },
+      { id: "sin-5", city: "Singapore", title: "Designer Garden Suite in Sentosa", type: "Entire guest suite", price: "₹24,000", rating: "4.96", imageUrl: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=600&q=80", isFav: true },
+      { id: "sin-6", city: "Singapore", title: "Luxury High-Rise Suite in Bugis", type: "Entire rental unit", price: "₹16,500", rating: "4.92", imageUrl: "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=600&q=80", isFav: false }
     ],
     London: [
-      { id: "lon-1", title: "Victorian Brick Townhouse in Kensington", type: "Entire townhouse", price: "₹21,000", rating: "4.96", imageUrl: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=600&q=80", isFav: true },
-      { id: "lon-2", title: "Cozy Garden Apartment in Shoreditch", type: "Entire rental unit", price: "₹14,500", rating: "4.91", imageUrl: "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=600&q=80", isFav: false },
-      { id: "lon-3", title: "Elegant Flat near Hyde Park", type: "Entire loft", price: "₹18,200", rating: "4.94", imageUrl: "https://images.unsplash.com/photo-1536376072261-38c75010e6c9?auto=format&fit=crop&w=600&q=80", isFav: true },
-      { id: "lon-4", title: "Charming Chelsea Study & Apartment", type: "Entire rental unit", price: "₹16,900", rating: "4.95", imageUrl: "https://images.unsplash.com/photo-1560185007-c5ca9d2c014d?auto=format&fit=crop&w=600&q=80", isFav: false },
-      { id: "lon-5", title: "Bright Modern flat in Greenwich", type: "Entire condo", price: "₹11,000", rating: "4.87", imageUrl: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=600&q=80", isFav: true },
-      { id: "lon-6", title: "Classic Mews House in Westminster", type: "Entire townhouse", price: "₹25,000", rating: "4.98", imageUrl: "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=600&q=80", isFav: true }
+      { id: "lon-1", city: "London", title: "Victorian Brick Townhouse in Kensington", type: "Entire townhouse", price: "₹21,000", rating: "4.96", imageUrl: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=600&q=80", isFav: true },
+      { id: "lon-2", city: "London", title: "Cozy Garden Apartment in Shoreditch", type: "Entire rental unit", price: "₹14,500", rating: "4.91", imageUrl: "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=600&q=80", isFav: false },
+      { id: "lon-3", city: "London", title: "Elegant Flat near Hyde Park", type: "Entire loft", price: "₹18,200", rating: "4.94", imageUrl: "https://images.unsplash.com/photo-1536376072261-38c75010e6c9?auto=format&fit=crop&w=600&q=80", isFav: true },
+      { id: "lon-4", city: "London", title: "Charming Chelsea Study & Apartment", type: "Entire rental unit", price: "₹16,900", rating: "4.95", imageUrl: "https://images.unsplash.com/photo-1560185007-c5ca9d2c014d?auto=format&fit=crop&w=600&q=80", isFav: false },
+      { id: "lon-5", city: "London", title: "Bright Modern flat in Greenwich", type: "Entire condo", price: "₹11,000", rating: "4.87", imageUrl: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=600&q=80", isFav: true },
+      { id: "lon-6", city: "London", title: "Classic Mews House in Westminster", type: "Entire townhouse", price: "₹25,000", rating: "4.98", imageUrl: "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=600&q=80", isFav: true }
     ],
     NewYork: [
-      { id: "nyc-1", title: "Manhattan Loft with Skyline view", type: "Entire loft", price: "₹24,500", rating: "4.97", imageUrl: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=600&q=80", isFav: true },
-      { id: "nyc-2", title: "Brooklyn Industrial Brick Flat", type: "Entire condo", price: "₹16,200", rating: "4.92", imageUrl: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=600&q=80", isFav: false },
-      { id: "nyc-3", title: "High-Rise Central Park Penthouse", type: "Entire penthouse", price: "₹38,000", rating: "4.99", imageUrl: "https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&w=600&q=80", isFav: true },
-      { id: "nyc-4", title: "Chic West Village Studio", type: "Entire studio", price: "₹13,900", rating: "4.89", imageUrl: "https://images.unsplash.com/photo-1560184897-ae75f418493e?auto=format&fit=crop&w=600&q=80", isFav: false },
-      { id: "nyc-5", title: "Bright Chelsea Apartment", type: "Entire loft", price: "₹18,000", rating: "4.93", imageUrl: "https://images.unsplash.com/photo-1536376072261-38c75010e6c9?auto=format&fit=crop&w=600&q=80", isFav: true },
-      { id: "nyc-6", title: "Modern Studio near Times Square", type: "Entire rental unit", price: "₹15,000", rating: "4.87", imageUrl: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=600&q=80", isFav: false }
+      { id: "nyc-1", city: "New York", title: "Manhattan Loft with Skyline view", type: "Entire loft", price: "₹24,500", rating: "4.97", imageUrl: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=600&q=80", isFav: true },
+      { id: "nyc-2", city: "New York", title: "Brooklyn Industrial Brick Flat", type: "Entire condo", price: "₹16,200", rating: "4.92", imageUrl: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=600&q=80", isFav: false },
+      { id: "nyc-3", city: "New York", title: "High-Rise Central Park Penthouse", type: "Entire penthouse", price: "₹38,000", rating: "4.99", imageUrl: "https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&w=600&q=80", isFav: true },
+      { id: "nyc-4", city: "New York", title: "Chic West Village Studio", type: "Entire studio", price: "₹13,900", rating: "4.89", imageUrl: "https://images.unsplash.com/photo-1560184897-ae75f418493e?auto=format&fit=crop&w=600&q=80", isFav: false },
+      { id: "nyc-5", city: "New York", title: "Bright Chelsea Apartment", type: "Entire loft", price: "₹18,000", rating: "4.93", imageUrl: "https://images.unsplash.com/photo-1536376072261-38c75010e6c9?auto=format&fit=crop&w=600&q=80", isFav: true },
+      { id: "nyc-6", city: "New York", title: "Modern Studio near Times Square", type: "Entire rental unit", price: "₹15,000", rating: "4.87", imageUrl: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=600&q=80", isFav: false }
     ]
   };
+
+  // Combine initial listings with custom listings added by host
+  const cityListingsData = React.useMemo(() => {
+    const data = {
+      Amsterdam: [...initialCityListingsData.Amsterdam!],
+      Delhi: [...initialCityListingsData.Delhi!],
+      Tokyo: [...initialCityListingsData.Tokyo!],
+      Singapore: [...initialCityListingsData.Singapore!],
+      London: [...initialCityListingsData.London!],
+      NewYork: [...initialCityListingsData.NewYork!]
+    };
+
+    customListings.forEach(item => {
+      const cityKey = (item.city || "Amsterdam").replace(/\s/g, "");
+      if (data[cityKey as keyof typeof data]) {
+        data[cityKey as keyof typeof data].push(item);
+      }
+    });
+
+    return data;
+  }, [customListings]);
 
   // Simulated AI Generation Action
   const handleGenerateItinerary = (targetDest?: string, targetDays?: string) => {
@@ -329,6 +364,62 @@ export default function Home() {
 
     // Auto generate plan
     handleGenerateItinerary(fullLoc, daysInput);
+  };
+
+  // Add Custom Listing / Host Home Action
+  const handleAddListing = (e: React.FormEvent) => {
+    e.preventDefault();
+    setHostError("");
+    setHostSuccess("");
+
+    // Enforce validation: all fields must be filled
+    if (!hostTitle.trim() || !hostCity.trim() || !hostPrice.trim() || !hostType.trim() || !hostImageUrl.trim()) {
+      setHostError("All sections must be filled before publishing your listing!");
+      return;
+    }
+
+    const priceVal = parseFloat(hostPrice.replace(/[^\d.]/g, ""));
+    if (isNaN(priceVal) || priceVal <= 0) {
+      setHostError("Please enter a valid price per night!");
+      return;
+    }
+
+    const newListingPayload = {
+      city: hostCity,
+      title: hostTitle,
+      type: hostType,
+      price: `₹${priceVal.toLocaleString()}`,
+      imageUrl: hostImageUrl,
+      rating: "5.00",
+      isFav: false
+    };
+
+    fetch(`${API_BASE}/listings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newListingPayload)
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Validation failed");
+        return res.json();
+      })
+      .then(addedListing => {
+        setCustomListings(prev => [...prev, addedListing]);
+        setHostSuccess("Listing successfully published and is now active!");
+        // Reset fields
+        setHostTitle("");
+        setHostPrice("");
+        setHostImageUrl("");
+      })
+      .catch(err => {
+        // Offline/Failure fallback
+        const offlineListing = { id: `custom-${Date.now()}`, ...newListingPayload };
+        setCustomListings(prev => [...prev, offlineListing]);
+        setHostSuccess("Listing published successfully (Offline Fallback Mode)!");
+        setHostTitle("");
+        setHostPrice("");
+        setHostImageUrl("");
+      });
   };
 
   // Add Expense Action
@@ -524,7 +615,7 @@ export default function Home() {
 
   // Active City Listings Grid Data (for single city view)
   const currentCityKey = selectedCity.replace(/\s/g, "");
-  const currentCityListings: ListingCard[] = cityListingsData[currentCityKey] || cityListingsData["Amsterdam"] || [];
+  const currentCityListings: ListingCard[] = (cityListingsData as Record<string, ListingCard[]>)[currentCityKey] || cityListingsData["Amsterdam"] || [];
 
   return (
     <div style={{ backgroundColor: "var(--white)", color: "var(--hof)", minHeight: "100vh", position: "relative" }}>
@@ -561,8 +652,8 @@ export default function Home() {
 
           {/* Right Header items */}
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <span style={{ fontFamily: "var(--font-cereal)", fontSize: "14px", fontWeight: 600, color: "var(--hof)", cursor: "pointer" }} onClick={() => setHeaderTab("planner")}>
-              Go to Workspace
+            <span style={{ fontFamily: "var(--font-cereal)", fontSize: "14px", fontWeight: 600, color: "var(--hof)", cursor: "pointer" }} onClick={() => setHeaderTab("host")}>
+              Airbnb your home
             </span>
             <Globe size={16} style={{ color: "var(--hof)", cursor: "pointer" }} />
             
@@ -1101,9 +1192,237 @@ export default function Home() {
           </div>
         )}
 
+        {/* VIEW 3: HOST (Airbnb Host Admin Panel) */}
+        {headerTab === "host" && (
+          <div style={{ padding: "3rem 0 4rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "40px", borderBottom: "1px solid var(--deco)", paddingBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
+              <div>
+                <span style={{ color: "var(--rausch-dark)", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  Host Console
+                </span>
+                <h1 style={{ fontSize: "32px", fontWeight: 700, marginTop: "6px" }}>Airbnb your home</h1>
+                <p style={{ color: "var(--foggy)", fontSize: "14px", marginTop: "4px" }}>
+                  Fill all sections to publish your property listing. It will instantly show up when searched or filtered in the main feeds.
+                </p>
+              </div>
+              <button
+                onClick={() => setHeaderTab("homes")}
+                className="airbnb-btn-secondary"
+                style={{ border: "1px solid var(--deco)", borderRadius: "var(--radius-pill)", padding: "10px 20px", fontSize: "13px", fontWeight: 600, cursor: "pointer", background: "transparent" }}
+              >
+                ← Back to Stays Feed
+              </button>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "40px", marginBottom: "48px" }}>
+              
+              {/* Left Column: List Home Form */}
+              <div className="airbnb-card" style={{ padding: "32px" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: 700, color: "var(--hof)", marginBottom: "20px" }}>Create New Listing</h3>
+                
+                {hostError && (
+                  <div style={{ padding: "12px 16px", background: "#fdf0f0", color: "#c0392b", borderRadius: "var(--radius-md)", fontSize: "13px", fontWeight: 600, marginBottom: "20px", border: "1px solid #f9d5d5" }}>
+                    ⚠️ {hostError}
+                  </div>
+                )}
+                
+                {hostSuccess && (
+                  <div style={{ padding: "12px 16px", background: "#f0fdf4", color: "#27ae60", borderRadius: "var(--radius-md)", fontSize: "13px", fontWeight: 600, marginBottom: "20px", border: "1px solid #d5f9e2" }}>
+                    ✅ {hostSuccess}
+                  </div>
+                )}
+
+                <form onSubmit={handleAddListing} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <label style={{ fontSize: "12px", fontWeight: 700, color: "var(--hof)" }}>Listing Title</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Mid-Century Modern Apartment"
+                      value={hostTitle}
+                      onChange={(e) => setHostTitle(e.target.value)}
+                      className="saas-input"
+                      required
+                    />
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <label style={{ fontSize: "12px", fontWeight: 700, color: "var(--hof)" }}>City</label>
+                      <select
+                        value={hostCity}
+                        onChange={(e) => setHostCity(e.target.value)}
+                        className="saas-select"
+                        required
+                      >
+                        <option value="Amsterdam">Amsterdam</option>
+                        <option value="Delhi">Delhi</option>
+                        <option value="Tokyo">Tokyo</option>
+                        <option value="Singapore">Singapore</option>
+                        <option value="London">London</option>
+                        <option value="New York">New York</option>
+                      </select>
+                    </div>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <label style={{ fontSize: "12px", fontWeight: 700, color: "var(--hof)" }}>Home Type</label>
+                      <select
+                        value={hostType}
+                        onChange={(e) => setHostType(e.target.value)}
+                        className="saas-select"
+                        required
+                      >
+                        <option value="Entire rental unit">Entire rental unit</option>
+                        <option value="Entire loft">Entire loft</option>
+                        <option value="Houseboat">Houseboat</option>
+                        <option value="Entire studio">Entire studio</option>
+                        <option value="Entire condo">Entire condo</option>
+                        <option value="Private room in home">Private room in home</option>
+                        <option value="Entire bungalow">Entire bungalow</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <label style={{ fontSize: "12px", fontWeight: 700, color: "var(--hof)" }}>Price per night (INR)</label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 7500"
+                      value={hostPrice}
+                      onChange={(e) => setHostPrice(e.target.value)}
+                      className="saas-input"
+                      required
+                    />
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <label style={{ fontSize: "12px", fontWeight: 700, color: "var(--hof)" }}>Cover Photo URL</label>
+                    <input
+                      type="url"
+                      placeholder="https://images.unsplash.com/..."
+                      value={hostImageUrl}
+                      onChange={(e) => setHostImageUrl(e.target.value)}
+                      className="saas-input"
+                      required
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="airbnb-btn-primary"
+                    style={{ width: "100%", justifyContent: "center", padding: "14px", marginTop: "10px" }}
+                  >
+                    Publish Listing
+                  </button>
+                </form>
+              </div>
+
+              {/* Right Column: Live Preview & Image Presets */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
+                
+                {/* Live Card Preview */}
+                <div className="airbnb-card" style={{ padding: "24px" }}>
+                  <h3 style={{ fontSize: "16px", fontWeight: 700, color: "var(--hof)", marginBottom: "16px" }}>Live Listing Preview</h3>
+                  
+                  <div style={{ width: "100%", maxWidth: "300px", margin: "0 auto" }}>
+                    <div style={{ width: "100%", aspectRatio: "20/19", borderRadius: "var(--radius-xl)", overflow: "hidden", position: "relative", background: "var(--grey200)", border: "1px solid var(--deco)" }}>
+                      {hostImageUrl ? (
+                        <img src={hostImageUrl} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%", height: "100%", color: "var(--bobo)" }}>
+                          <HomeIcon size={40} />
+                        </div>
+                      )}
+                      <div style={{ position: "absolute", top: "12px", left: "12px" }}>
+                        <span style={{ fontSize: "10px", fontWeight: 700, background: "var(--white)", padding: "4px 8px", borderRadius: "var(--radius-pill)", textTransform: "uppercase", color: "var(--hof)", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}>
+                          Preview
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: "12px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", fontWeight: 600, color: "var(--hof)", gap: "8px" }}>
+                        <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {hostTitle || "Your Home Listing Title"}
+                        </span>
+                        <span style={{ flexShrink: 0 }}>★ 5.00</span>
+                      </div>
+                      <span style={{ fontSize: "13px", color: "var(--foggy)", display: "block", marginTop: "2px" }}>
+                        {hostType} • {hostCity}
+                      </span>
+                      <span style={{ fontSize: "14px", color: "var(--hof)", fontWeight: 700, display: "block", marginTop: "4px" }}>
+                        ₹{hostPrice ? parseInt(hostPrice).toLocaleString() : "0"} <span style={{ fontWeight: 400, color: "var(--foggy)", fontSize: "13px" }}>/ night</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cover Image Preset Library */}
+                <div className="airbnb-card" style={{ padding: "24px" }}>
+                  <h3 style={{ fontSize: "16px", fontWeight: 700, color: "var(--hof)", marginBottom: "12px" }}>Unsplash HD Presets</h3>
+                  <p style={{ fontSize: "12px", color: "var(--foggy)", marginBottom: "16px" }}>Click any template photo to auto-fill the URL for testing.</p>
+                  
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
+                    {[
+                      { name: "Scandi Loft", url: "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=600&q=80" },
+                      { name: "Urban Brick", url: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=600&q=80" },
+                      { name: "Luxury Bed", url: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=600&q=80" },
+                      { name: "Cozy Studio", url: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=600&q=80" },
+                      { name: "Modern Suite", url: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=600&q=80" },
+                      { name: "Ryokan Zen", url: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=600&q=80" }
+                    ].map((preset, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => setHostImageUrl(preset.url)}
+                        style={{ cursor: "pointer", display: "flex", flexDirection: "column", gap: "4px" }}
+                      >
+                        <div style={{ width: "100%", aspectRatio: "1/1", borderRadius: "var(--radius-md)", overflow: "hidden", border: hostImageUrl === preset.url ? "2px solid var(--rausch-dark)" : "1px solid var(--deco)" }}>
+                          <img src={preset.url} alt={preset.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        </div>
+                        <span style={{ fontSize: "10px", textAlign: "center", color: "var(--foggy)" }}>{preset.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+            {/* Bottom Listings Grid */}
+            <div>
+              <h3 style={{ fontSize: "20px", fontWeight: 700, color: "var(--hof)", marginBottom: "20px" }}>Your Listed Properties</h3>
+              {customListings.length === 0 ? (
+                <div style={{ padding: "40px", background: "var(--grey200)", border: "1px dashed var(--deco)", borderRadius: "var(--radius-xl)", textAlign: "center", color: "var(--foggy)" }}>
+                  <HomeIcon size={32} style={{ marginBottom: "12px", color: "var(--bobo)", display: "inline-block" }} />
+                  <p style={{ fontSize: "14px" }}>No listed properties yet. Use the form above to add your first stay.</p>
+                </div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "24px" }}>
+                  {customListings.map(listing => (
+                    <div key={listing.id} className="airbnb-card" style={{ padding: "16px" }}>
+                      <div style={{ width: "100%", aspectRatio: "20/19", borderRadius: "var(--radius-xl)", overflow: "hidden", position: "relative" }}>
+                        <img src={listing.imageUrl} alt={listing.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      </div>
+                      <div style={{ marginTop: "12px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", fontWeight: 600, color: "var(--hof)", gap: "8px" }}>
+                          <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{listing.title}</span>
+                          <span>★ {listing.rating}</span>
+                        </div>
+                        <span style={{ fontSize: "13px", color: "var(--foggy)", display: "block", marginTop: "2px" }}>{listing.type} • {listing.city}</span>
+                        <span style={{ fontSize: "14px", color: "var(--hof)", fontWeight: 700, display: "block", marginTop: "4px" }}>{listing.price} <span style={{ fontWeight: 400, color: "var(--foggy)", fontSize: "13px" }}>/ night</span></span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+          </div>
+        )}
+
         {/* VIEW 2: PLANNER (Tourngineers Collaborative Workspace Workspace Console) */}
         {headerTab === "planner" && (
-          <section id="sandbox" style={{ padding: "3rem 0 4rem" }}>
+          <section style={{ padding: "3rem 0 4rem" }}>
             
             <div style={{ textAlign: "center", marginBottom: "40px" }}>
               <span style={{ color: "var(--rausch)", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
@@ -1342,15 +1661,15 @@ export default function Home() {
                             <option value="EUR">EUR (€)</option>
                           </select>
                         </div>
-                        <select
+                        <input
+                          type="text"
+                          placeholder="Paid by (e.g. Alex)"
                           value={expPaidBy}
                           onChange={(e) => setExpPaidBy(e.target.value)}
-                          className="saas-select"
-                        >
-                          <option value="Alex">Paid by Alex</option>
-                          <option value="Sophia">Paid by Sophia</option>
-                          <option value="Emily">Paid by Emily</option>
-                        </select>
+                          className="saas-input"
+                          style={{ width: "150px" }}
+                          required
+                        />
                         <button type="submit" className="airbnb-btn-primary">Add</button>
                       </form>
 

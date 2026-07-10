@@ -16,31 +16,22 @@ interface Expense {
   paidBy: string;
 }
 
-// In-Memory Database with city-specific and currency-aware expenses
-let expenses: Expense[] = [
-  // Amsterdam Stays Expenses
-  { id: "1", city: "Amsterdam", description: "Anne Frank House tickets", amount: 48, currency: "EUR", paidBy: "Alex" },
-  { id: "2", city: "Amsterdam", description: "Jordaan Boutique Loft booking", amount: 590, currency: "EUR", paidBy: "Emily" },
-  { id: "3", city: "Amsterdam", description: "Van Gogh Museum Group Pass", amount: 65, currency: "EUR", paidBy: "Sophia" },
-  { id: "4", city: "Amsterdam", description: "Damrak Candlelight Canal cruise", amount: 110, currency: "EUR", paidBy: "Alex" },
-  
-  // Delhi Stays Expenses
-  { id: "5", city: "Delhi", description: "Heritage Haveli stay deposit", amount: 4500, currency: "INR", paidBy: "Alex" },
-  { id: "6", city: "Delhi", description: "Connaught Place Dinner", amount: 2800, currency: "INR", paidBy: "Sophia" },
-  
-  // Tokyo Stays Expenses
-  { id: "7", city: "Tokyo", description: "Asakusa Tatami Ryokan Reservation", amount: 120, currency: "USD", paidBy: "Emily" },
-  { id: "8", city: "Tokyo", description: "Shibuya Sky view tickets", amount: 45, currency: "USD", paidBy: "Alex" },
-  
-  // Singapore Expenses
-  { id: "9", city: "Singapore", description: "Marina Bay Entrance tickets", amount: 90, currency: "USD", paidBy: "Emily" },
-  
-  // London Expenses
-  { id: "10", city: "London", description: "Kensington High tea room", amount: 75, currency: "EUR", paidBy: "Sophia" },
-  
-  // New York Expenses
-  { id: "11", city: "New York", description: "Broadway show tickets", amount: 180, currency: "USD", paidBy: "Alex" }
-];
+interface ListingCard {
+  id: string;
+  city: string;
+  title: string;
+  type: string;
+  price: string;
+  rating: string;
+  imageUrl: string;
+  isFav: boolean;
+}
+
+// In-Memory Database with EMPTY seed expenses (no seeds!)
+let expenses: Expense[] = [];
+
+// Dynamic listings created by the hosts (initially empty)
+let customListings: ListingCard[] = [];
 
 let checklist = [
   { id: "c1", text: "Passports & Schengen Travel Visa", checked: true, tag: "Essential" },
@@ -113,7 +104,35 @@ app.delete("/api/expenses/:id", (req, res) => {
   res.json({ message: "Expense deleted successfully", id });
 });
 
-// 2. CHECKLIST CRUD
+// 2. LISTINGS CRUD
+app.get("/api/listings", (req, res) => {
+  res.json(customListings);
+});
+
+app.post("/api/listings", (req, res) => {
+  const { city, title, type, price, rating, imageUrl } = req.body;
+  
+  // Validation: Check if all fields are filled
+  if (!city || !title || !type || !price || !imageUrl) {
+    return res.status(400).json({ error: "All listing sections must be filled!" });
+  }
+
+  const newListing: ListingCard = {
+    id: `custom-${Date.now()}`,
+    city,
+    title,
+    type,
+    price,
+    rating: rating || "5.00",
+    imageUrl,
+    isFav: false
+  };
+
+  customListings.push(newListing);
+  res.status(201).json(newListing);
+});
+
+// 3. CHECKLIST CRUD
 app.get("/api/checklist", (req, res) => {
   res.json(checklist);
 });
@@ -158,7 +177,7 @@ app.delete("/api/checklist/:id", (req, res) => {
   res.json({ message: "Item deleted successfully", id });
 });
 
-// 3. MESSAGES CRUD
+// 4. MESSAGES CRUD
 app.get("/api/messages", (req, res) => {
   res.json(chatMessages);
 });
@@ -179,7 +198,7 @@ app.post("/api/messages", (req, res) => {
   res.status(201).json(newMsg);
 });
 
-// 4. ITINERARY CRUD
+// 5. ITINERARY CRUD
 app.get("/api/itinerary", (req, res) => {
   const { destination } = req.query;
   if (destination) {

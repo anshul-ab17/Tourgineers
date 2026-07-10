@@ -103,6 +103,7 @@ export default function Home() {
   const [expPaidBy, setExpPaidBy] = useState("");
   const [expCurrency, setExpCurrency] = useState<"USD" | "INR" | "EUR">("USD");
   const [displayCurrency, setDisplayCurrency] = useState<"USD" | "INR" | "EUR">("USD");
+  const [baseBudgetLimit, setBaseBudgetLimit] = useState(2500);
 
   // --- Host Admin Panel State ---
   const [customListings, setCustomListings] = useState<ListingCard[]>([]);
@@ -607,7 +608,7 @@ export default function Home() {
       return sum + converted;
     }, 0)
   );
-  const budgetTotal = Math.round(convertCurrency(2500, "USD", displayCurrency));
+  const budgetTotal = Math.round(convertCurrency(baseBudgetLimit, "USD", displayCurrency));
   const percentSpent = Math.min(100, Math.round((totalSpent / budgetTotal) * 100));
   const remainingBudget = Math.max(0, budgetTotal - totalSpent);
   const checkedCount = checklist.filter(c => c.checked).length;
@@ -1604,9 +1605,31 @@ export default function Home() {
                               </button>
                             ))}
                           </div>
-                          <span style={{ fontSize: "12px", color: "var(--foggy)", fontWeight: 700 }}>
-                            LIMIT: {currencySymbols[displayCurrency]}{budgetTotal}
-                          </span>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "var(--foggy)", fontWeight: 700 }}>
+                            <span>LIMIT: {currencySymbols[displayCurrency]}</span>
+                            <input
+                              type="number"
+                              value={budgetTotal || ""}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value);
+                                const valNum = isNaN(val) ? 0 : val;
+                                const valInUsd = convertCurrency(valNum, displayCurrency, "USD");
+                                setBaseBudgetLimit(valInUsd);
+                              }}
+                              style={{
+                                width: "65px",
+                                background: "transparent",
+                                border: "none",
+                                borderBottom: "1px dashed var(--bobo)",
+                                color: "var(--hof)",
+                                fontWeight: 700,
+                                fontSize: "12px",
+                                outline: "none",
+                                padding: "2px 4px",
+                                textAlign: "left"
+                              }}
+                            />
+                          </div>
                         </div>
                       </div>
 

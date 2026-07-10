@@ -105,6 +105,24 @@ export default function Home() {
   const [displayCurrency, setDisplayCurrency] = useState<"USD" | "INR" | "EUR">("USD");
   const [baseBudgetLimit, setBaseBudgetLimit] = useState(2500);
 
+  // --- Auth State ---
+  const [currentUser, setCurrentUser] = useState<{ name: string; email: string } | null>(null);
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authName, setAuthName] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [authSuccess, setAuthSuccess] = useState("");
+
+  // --- Dodo Pay Booking State ---
+  const [selectedBookingListing, setSelectedBookingListing] = useState<ListingCard | null>(null);
+  const [bookingNights, setBookingNights] = useState(5);
+  const [paymentStep, setPaymentStep] = useState<'details' | 'checkout' | 'processing' | 'success'>('details');
+  const [dodoPaymentMethod, setDodoPaymentMethod] = useState<'wallet' | 'card'>('wallet');
+  const [dodoCardName, setDodoCardName] = useState("");
+  const [dodoPin, setDodoPin] = useState("");
+  const [dodoWalletBalance, setDodoWalletBalance] = useState(500000);
+
   // --- Host Admin Panel State ---
   const [customListings, setCustomListings] = useState<ListingCard[]>([]);
   const [hostTitle, setHostTitle] = useState("");
@@ -192,6 +210,13 @@ export default function Home() {
 
   // Fetch initial checklist, messages and listings on mount
   useEffect(() => {
+    const savedUser = localStorage.getItem("tour_user");
+    if (savedUser) {
+      try {
+        setCurrentUser(JSON.parse(savedUser));
+      } catch (e) {}
+    }
+
     // 1. Fetch Checklist
     fetch(`${API_BASE}/checklist`)
       .then(res => res.json())
@@ -352,19 +377,22 @@ export default function Home() {
     }, 1200);
   };
 
-  // Click on a property card to load and switch directly to Planner
+  // Click on a property card to open stay detail & Dodo booking modal
   const handleCardClick = (title: string, city: string) => {
-    const fullLoc = `${title}, ${city}`;
-    setDestInput(fullLoc);
-    setHeroDest(fullLoc);
-    setWeatherCity(city);
-    handleWeatherQuery(city);
+    const mergedListings: ListingCard[] = [];
+    mergedListings.push(...customListings);
+    Object.values(cityListingsData as Record<string, ListingCard[]>).forEach(arr => {
+      mergedListings.push(...arr);
+    });
     
-    // Switch header view to Planner
-    setHeaderTab("planner");
-
-    // Auto generate plan
-    handleGenerateItinerary(fullLoc, daysInput);
+    const matched = mergedListings.find(l => l.title === title || l.title.includes(title));
+    if (matched) {
+      setSelectedBookingListing(matched);
+      setPaymentStep('details');
+      setBookingNights(5);
+      setDodoPin("");
+      setDodoCardName("");
+    }
   };
 
   // Add Custom Listing / Host Home Action
@@ -421,6 +449,90 @@ export default function Home() {
         setHostPrice("");
         setHostImageUrl("");
       });
+  };
+
+  // Auth Submit Action
+  const handleAuthSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError("");
+    setAuthSuccess("");
+
+    if (!authEmail.trim() || !authPassword.trim() || (authMode === "signup" && !authName.trim())) {
+      setAuthError("Please fill in all fields!");
+      return;
+    }
+
+    const endpoint = authMode === "login" ? "/api/login" : "/api/register";
+    const body = authMode === "login"
+      ? { email: authEmail, password: authPassword }
+      : { name: authName, email: authEmail, password: authPassword };
+
+    fetch(`${API_BASE}${endpoint}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    })
+      .then(async res => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Authentication failed");
+        return data;
+      })
+      .then(user => {
+        setCurrentUser(user);
+        localStorage.setItem("tour_user", JSON.stringify(user));
+        setAuthSuccess(authMode === "login" ? "Logged in successfully!" : "Account created successfully!");
+        setAuthEmail("");
+        setAuthPassword("");
+        setAuthName("");
+      })
+      .catch(err => {
+        // Offline auth fallback for testing ease
+        if (authMode === "login") {
+          const dummyUser = { name: authEmail.split("@")[0] || "User", email: authEmail };
+          setCurrentUser(dummyUser);
+          localStorage.setItem("tour_user", JSON.stringify(dummyUser));
+          setAuthSuccess("Logged in successfully (Offline Dev Override)!");
+        } else {
+          setAuthError(err.message || "Authentication failed.");
+        }
+      });
+  };
+  // Logout Action
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem("tour_user");
+    setHeaderTab("homes");
+  };
+
+  // Complete Booking via Dodo Pay
+  const handleCompleteDodoPayment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (dodoPaymentMethod === 'card' && (!dodoCardName.trim() || !dodoPin.trim())) {
+      alert("Please fill in card details and Dodo PIN!");
+      return;
+    }
+
+    setPaymentStep('processing');
+    setTimeout(() => {
+      const listingPrice = parseFloat(selectedBookingListing?.price.replace(/[^\d.]/g, "") || "0");
+      const totalCost = listingPrice * bookingNights;
+      if (dodoPaymentMethod === 'wallet') {
+        setDodoWalletBalance(prev => Math.max(0, prev - totalCost));
+      }
+      setPaymentStep('success');
+    }, 2000);
+  };
+
+  // Load Stay directly to Planner Workspace
+  const handleLoadToWorkspace = (title: string, city: string) => {
+    const fullLoc = `${title}, ${city}`;
+    setDestInput(fullLoc);
+    setHeroDest(fullLoc);
+    setWeatherCity(city);
+    handleWeatherQuery(city);
+    setHeaderTab("planner");
+    handleGenerateItinerary(fullLoc, daysInput);
+    setSelectedBookingListing(null); // close booking details modal
   };
 
   // Add Expense Action
@@ -659,6 +771,17 @@ export default function Home() {
             <Globe size={16} style={{ color: "var(--hof)", cursor: "pointer" }} />
             
             {/* User Pill Button */}
+            {currentUser && (
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--hof)", fontWeight: 600 }}>
+                <span>Hi, {currentUser.name}!</span>
+                <span 
+                  onClick={handleLogout} 
+                  style={{ color: "var(--rausch-dark)", textDecoration: "underline", cursor: "pointer", marginLeft: "4px", fontSize: "12px", fontWeight: 500 }}
+                >
+                  Log out
+                </span>
+              </div>
+            )}
             <div
               style={{
                 display: "flex",
@@ -1195,7 +1318,101 @@ export default function Home() {
 
         {/* VIEW 3: HOST (Host Admin Panel) */}
         {headerTab === "host" && (
-          <div style={{ padding: "3rem 0 4rem" }}>
+          currentUser === null ? (
+            <div style={{ padding: "4rem 0 6rem", display: "flex", justifyContent: "center" }}>
+              <div className="airbnb-card" style={{ padding: "40px", maxWidth: "420px", width: "100%", boxShadow: "0 10px 30px rgba(0,0,0,0.06)", border: "1px solid var(--deco)" }}>
+                <div style={{ textAlign: "center", marginBottom: "28px" }}>
+                  <div style={{ width: "56px", height: "56px", borderRadius: "var(--radius-full)", backgroundColor: "var(--rausch)", color: "var(--hof)", display: "inline-flex", justifyContent: "center", alignItems: "center", marginBottom: "16px" }}>
+                    <User size={28} />
+                  </div>
+                  <h2 style={{ fontSize: "24px", fontWeight: 700, color: "var(--hof)" }}>
+                    {authMode === "login" ? "Welcome back" : "Become a host"}
+                  </h2>
+                  <p style={{ fontSize: "13px", color: "var(--foggy)", marginTop: "6px" }}>
+                    {authMode === "login" 
+                      ? "Log in to manage and edit your property listings." 
+                      : "Create a host account to list properties on Tourgineers."}
+                  </p>
+                </div>
+
+                {authError && (
+                  <div style={{ padding: "12px", background: "#fdf0f0", color: "#c0392b", borderRadius: "var(--radius-md)", fontSize: "13px", fontWeight: 600, marginBottom: "20px", border: "1px solid #f9d5d5", textAlign: "center" }}>
+                    ⚠️ {authError}
+                  </div>
+                )}
+                {authSuccess && (
+                  <div style={{ padding: "12px", background: "#f0fdf4", color: "#27ae60", borderRadius: "var(--radius-md)", fontSize: "13px", fontWeight: 600, marginBottom: "20px", border: "1px solid #d5f9e2", textAlign: "center" }}>
+                    ✅ {authSuccess}
+                  </div>
+                )}
+
+                <form onSubmit={handleAuthSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  {authMode === "signup" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <label style={{ fontSize: "12px", fontWeight: 700, color: "var(--hof)" }}>Full Name</label>
+                      <input
+                        type="text"
+                        placeholder="Anshul"
+                        value={authName}
+                        onChange={(e) => setAuthName(e.target.value)}
+                        className="saas-input"
+                        required
+                      />
+                    </div>
+                  )}
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <label style={{ fontSize: "12px", fontWeight: 700, color: "var(--hof)" }}>Email Address</label>
+                    <input
+                      type="email"
+                      placeholder="anshul@test.com"
+                      value={authEmail}
+                      onChange={(e) => setAuthEmail(e.target.value)}
+                      className="saas-input"
+                      required
+                    />
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <label style={{ fontSize: "12px", fontWeight: 700, color: "var(--hof)" }}>Password</label>
+                    <input
+                      type="password"
+                      placeholder="••••••••"
+                      value={authPassword}
+                      onChange={(e) => setAuthPassword(e.target.value)}
+                      className="saas-input"
+                      required
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="airbnb-btn-primary"
+                    style={{ width: "100%", justifyContent: "center", padding: "14px", marginTop: "10px" }}
+                  >
+                    {authMode === "login" ? "Log In" : "Sign Up"}
+                  </button>
+                </form>
+
+                <div style={{ textAlign: "center", marginTop: "24px", paddingTop: "20px", borderTop: "1px solid var(--deco)", fontSize: "13px" }}>
+                  <span style={{ color: "var(--foggy)" }}>
+                    {authMode === "login" ? "Don't have an account?" : "Already have an account?"}
+                  </span>{" "}
+                  <button
+                    onClick={() => {
+                      setAuthMode(authMode === "login" ? "signup" : "login");
+                      setAuthError("");
+                      setAuthSuccess("");
+                    }}
+                    style={{ background: "transparent", border: "none", color: "var(--rausch-dark)", fontWeight: 700, cursor: "pointer", textDecoration: "underline", padding: 0 }}
+                  >
+                    {authMode === "login" ? "Sign up" : "Log in"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ padding: "3rem 0 4rem" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "40px", borderBottom: "1px solid var(--deco)", paddingBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
               <div>
                 <span style={{ color: "var(--rausch-dark)", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
@@ -1419,7 +1636,8 @@ export default function Home() {
             </div>
 
           </div>
-        )}
+        )
+      )}
 
         {/* VIEW 2: PLANNER (Tourngineers Collaborative Workspace Workspace Console) */}
         {headerTab === "planner" && (
@@ -1928,6 +2146,376 @@ export default function Home() {
 
         </div>
       </footer>
+
+      {/* DODO PAY BOOKING MODAL OVERLAY */}
+      {selectedBookingListing && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          backgroundColor: "rgba(0, 0, 0, 0.6)",
+          backdropFilter: "blur(6px)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          zIndex: 1000,
+          padding: "20px"
+        }}>
+          <div className="airbnb-card" style={{
+            background: "var(--white)",
+            borderRadius: "24px",
+            width: "100%",
+            maxWidth: "580px",
+            boxShadow: "0 20px 50px rgba(0,0,0,0.15)",
+            padding: "32px",
+            position: "relative",
+            maxHeight: "90vh",
+            overflowY: "auto",
+            border: "1px solid var(--deco)"
+          }}>
+            {/* Close Button */}
+            {paymentStep !== 'processing' && (
+              <button
+                onClick={() => setSelectedBookingListing(null)}
+                style={{
+                  position: "absolute",
+                  top: "20px",
+                  right: "20px",
+                  background: "transparent",
+                  border: "none",
+                  fontSize: "20px",
+                  cursor: "pointer",
+                  color: "var(--foggy)",
+                  fontWeight: 600
+                }}
+              >
+                ✕
+              </button>
+            )}
+
+            {/* STEP 1: Details View */}
+            {paymentStep === 'details' && (
+              <div>
+                <h2 style={{ fontSize: "22px", fontWeight: 700, color: "var(--hof)", marginBottom: "8px" }}>Review Stay Details</h2>
+                <p style={{ fontSize: "13px", color: "var(--foggy)", marginBottom: "20px" }}>Configure your trip dates and checkout details below.</p>
+
+                <div style={{ display: "flex", gap: "20px", marginBottom: "24px", flexWrap: "wrap" }}>
+                  <div style={{ width: "160px", aspectRatio: "4/3", borderRadius: "12px", overflow: "hidden", backgroundColor: "var(--grey200)", flexShrink: 0 }}>
+                    <img src={selectedBookingListing.imageUrl} alt={selectedBookingListing.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: "200px" }}>
+                    <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--rausch-dark)", textTransform: "uppercase" }}>{selectedBookingListing.type}</span>
+                    <h3 style={{ fontSize: "16px", fontWeight: 700, color: "var(--hof)", margin: "4px 0" }}>{selectedBookingListing.title}</h3>
+                    <span style={{ fontSize: "13px", color: "var(--foggy)" }}>Location: {selectedBookingListing.city}</span>
+                    <span style={{ display: "block", fontSize: "14px", fontWeight: 700, color: "var(--hof)", marginTop: "8px" }}>{selectedBookingListing.price} <span style={{ fontWeight: 400, color: "var(--foggy)", fontSize: "13px" }}>/ night</span></span>
+                  </div>
+                </div>
+
+                {/* Duration Slider */}
+                <div style={{ background: "var(--grey200)", padding: "16px 20px", borderRadius: "16px", marginBottom: "24px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", fontWeight: 700, color: "var(--hof)", marginBottom: "8px" }}>
+                    <span>Stay Duration</span>
+                    <span style={{ color: "var(--rausch-dark)" }}>{bookingNights} Nights</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max="30"
+                    value={bookingNights}
+                    onChange={(e) => setBookingNights(parseInt(e.target.value))}
+                    style={{ width: "100%", accentColor: "var(--rausch)" }}
+                  />
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--foggy)", marginTop: "4px" }}>
+                    <span>1 Night</span>
+                    <span>30 Nights</span>
+                  </div>
+                </div>
+
+                {/* Pricing Summary */}
+                <div style={{ borderTop: "1px solid var(--deco)", paddingTop: "16px", marginBottom: "28px" }}>
+                  <h4 style={{ fontSize: "14px", fontWeight: 700, color: "var(--hof)", marginBottom: "12px" }}>Price Breakdown</h4>
+                  
+                  {(() => {
+                    const priceVal = parseFloat(selectedBookingListing.price.replace(/[^\d.]/g, "")) || 0;
+                    const subtotal = priceVal * bookingNights;
+                    const cleaningFee = Math.round(priceVal * 0.08);
+                    const serviceFee = Math.round(priceVal * 0.04);
+                    const total = subtotal + cleaningFee + serviceFee;
+                    
+                    return (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "14px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", color: "var(--foggy)" }}>
+                          <span>₹{priceVal.toLocaleString()} x {bookingNights} nights</span>
+                          <span style={{ color: "var(--hof)", fontWeight: 600 }}>₹{subtotal.toLocaleString()}</span>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", color: "var(--foggy)" }}>
+                          <span>Cleaning fee</span>
+                          <span style={{ color: "var(--hof)", fontWeight: 600 }}>₹{cleaningFee.toLocaleString()}</span>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", color: "var(--foggy)" }}>
+                          <span>Tourgineers service fee</span>
+                          <span style={{ color: "var(--hof)", fontWeight: 600 }}>₹{serviceFee.toLocaleString()}</span>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--deco)", paddingTop: "12px", fontSize: "16px", fontWeight: 700, color: "var(--hof)" }}>
+                          <span>Total (INR)</span>
+                          <span>₹{total.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                  <button
+                    onClick={() => setPaymentStep('checkout')}
+                    className="airbnb-btn-primary"
+                    style={{ flex: 1, justifyContent: "center", padding: "14px" }}
+                  >
+                    Book with Dodo Pay
+                  </button>
+                  <button
+                    onClick={() => handleLoadToWorkspace(selectedBookingListing.title || "", selectedBookingListing.city || "")}
+                    className="airbnb-btn-secondary"
+                    style={{ border: "1px solid var(--deco)", display: "flex", alignItems: "center", gap: "8px", justifyContent: "center", padding: "14px" }}
+                  >
+                    <Compass size={16} />
+                    <span>View in Planner</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 2: Checkout View */}
+            {paymentStep === 'checkout' && (
+              <div>
+                {/* Dodo Pay Logo Header */}
+                <div style={{ textAlign: "center", marginBottom: "24px" }}>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "var(--grey200)", padding: "10px 24px", borderRadius: "var(--radius-pill)", border: "1px solid var(--deco)" }}>
+                    <Compass size={20} style={{ color: "var(--rausch)" }} />
+                    <span style={{ fontSize: "16px", fontWeight: 800, color: "var(--rausch-dark)", letterSpacing: "-0.5px" }}>dodo pay</span>
+                  </div>
+                  <h2 style={{ fontSize: "20px", fontWeight: 700, color: "var(--hof)", marginTop: "12px" }}>Complete Payment</h2>
+                  <p style={{ fontSize: "13px", color: "var(--foggy)" }}>Choose a simulated dodo checkout method below.</p>
+                </div>
+
+                {/* Pricing Summary line */}
+                <div style={{ background: "var(--grey200)", padding: "14px 18px", borderRadius: "12px", fontSize: "13px", color: "var(--hof)", marginBottom: "20px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700 }}>
+                    <span>Amount Due</span>
+                    <span>
+                      ₹{(() => {
+                        const priceVal = parseFloat(selectedBookingListing.price.replace(/[^\d.]/g, "")) || 0;
+                        const cleaningFee = Math.round(priceVal * 0.08);
+                        const serviceFee = Math.round(priceVal * 0.04);
+                        return (priceVal * bookingNights + cleaningFee + serviceFee).toLocaleString();
+                      })()}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Payment Selection Tabs */}
+                <div style={{ display: "flex", gap: "10px", marginBottom: "24px" }}>
+                  <button
+                    onClick={() => setDodoPaymentMethod('wallet')}
+                    style={{
+                      flex: 1,
+                      padding: "14px",
+                      borderRadius: "16px",
+                      border: dodoPaymentMethod === 'wallet' ? "2px solid var(--rausch-dark)" : "1px solid var(--deco)",
+                      background: dodoPaymentMethod === 'wallet' ? "var(--grey200)" : "var(--white)",
+                      cursor: "pointer",
+                      textAlign: "center"
+                    }}
+                  >
+                    <span style={{ display: "block", fontSize: "13px", fontWeight: 700, color: "var(--hof)" }}>🦤 Dodo Wallet</span>
+                    <span style={{ fontSize: "11px", color: "var(--foggy)" }}>Bal: ₹{dodoWalletBalance.toLocaleString()}</span>
+                  </button>
+                  <button
+                    onClick={() => setDodoPaymentMethod('card')}
+                    style={{
+                      flex: 1,
+                      padding: "14px",
+                      borderRadius: "16px",
+                      border: dodoPaymentMethod === 'card' ? "2px solid var(--rausch-dark)" : "1px solid var(--deco)",
+                      background: dodoPaymentMethod === 'card' ? "var(--grey200)" : "var(--white)",
+                      cursor: "pointer",
+                      textAlign: "center"
+                    }}
+                  >
+                    <span style={{ display: "block", fontSize: "13px", fontWeight: 700, color: "var(--hof)" }}>💳 Dodo Express Card</span>
+                    <span style={{ fontSize: "11px", color: "var(--foggy)" }}>Visa / Master dummy</span>
+                  </button>
+                </div>
+
+                <form onSubmit={handleCompleteDodoPayment} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  {dodoPaymentMethod === 'wallet' ? (
+                    <div style={{ padding: "16px", background: "#f0fdf4", border: "1px solid #d5f9e2", borderRadius: "12px", fontSize: "13px", color: "#27ae60", textAlign: "center" }}>
+                      💸 Ready to complete booking! The total will be deducted from your simulated **Dodo Wallet**.
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <label style={{ fontSize: "12px", fontWeight: 700, color: "var(--hof)" }}>Cardholder Name</label>
+                        <input
+                          type="text"
+                          placeholder="Anshul"
+                          value={dodoCardName}
+                          onChange={(e) => setDodoCardName(e.target.value)}
+                          className="saas-input"
+                          required
+                        />
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                          <label style={{ fontSize: "12px", fontWeight: 700, color: "var(--hof)" }}>Dodo Account PIN</label>
+                          <input
+                            type="password"
+                            placeholder="••••"
+                            maxLength={4}
+                            value={dodoPin}
+                            onChange={(e) => setDodoPin(e.target.value)}
+                            className="saas-input"
+                            required
+                          />
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                          <label style={{ fontSize: "12px", fontWeight: 700, color: "var(--hof)" }}>Security Code</label>
+                          <input
+                            type="text"
+                            placeholder="777"
+                            maxLength={3}
+                            className="saas-input"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ display: "flex", gap: "12px", marginTop: "10px" }}>
+                    <button
+                      type="submit"
+                      className="airbnb-btn-primary"
+                      style={{ flex: 2, justifyContent: "center", padding: "14px" }}
+                    >
+                      Authorize Payment
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentStep('details')}
+                      className="airbnb-btn-secondary"
+                      style={{ flex: 1, border: "1px solid var(--deco)", padding: "14px", justifyContent: "center" }}
+                    >
+                      Back
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* STEP 3: Processing Animation */}
+            {paymentStep === 'processing' && (
+              <div style={{ textAlign: "center", padding: "40px 0" }}>
+                <div style={{
+                  width: "56px",
+                  height: "56px",
+                  border: "4px solid var(--deco)",
+                  borderTop: "4px solid var(--rausch)",
+                  borderRadius: "50%",
+                  animation: "spin 1s linear infinite",
+                  margin: "0 auto 24px"
+                }}></div>
+                <h3 style={{ fontSize: "18px", fontWeight: 700, color: "var(--hof)" }}>Securing Dodo Pay Transaction...</h3>
+                <p style={{ fontSize: "13px", color: "var(--foggy)", marginTop: "8px" }}>Please wait while the Dodo gateway registers your booking.</p>
+                
+                {/* Quick keyframe injection to make spinning work */}
+                <style>{`
+                  @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                  }
+                `}</style>
+              </div>
+            )}
+
+            {/* STEP 4: Success Ticket */}
+            {paymentStep === 'success' && (
+              <div>
+                <div style={{ textAlign: "center", marginBottom: "24px" }}>
+                  <div style={{ width: "56px", height: "56px", borderRadius: "50%", background: "#27ae60", color: "var(--white)", display: "inline-flex", justifyContent: "center", alignItems: "center", marginBottom: "16px" }}>
+                    <Check size={28} />
+                  </div>
+                  <h2 style={{ fontSize: "22px", fontWeight: 800, color: "#27ae60" }}>Booking Secured!</h2>
+                  <p style={{ fontSize: "13px", color: "var(--foggy)" }}>Simulated payment via Dodo Pay authorized successfully.</p>
+                </div>
+
+                {/* Ticket Receipt Box */}
+                <div style={{ border: "2px dashed var(--deco)", borderRadius: "16px", padding: "20px", background: "var(--grey200)", marginBottom: "28px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px dashed var(--deco)", paddingBottom: "12px", marginBottom: "12px", fontSize: "12px", color: "var(--foggy)", fontWeight: 700 }}>
+                    <span>RECEIPT TICKET</span>
+                    <span style={{ color: "var(--hof)" }}>DODO-TX-{Math.floor(Math.random() * 90000000 + 10000000)}</span>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "var(--foggy)" }}>Stays Property:</span>
+                      <strong style={{ color: "var(--hof)", textAlign: "right", maxWidth: "240px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selectedBookingListing.title}</strong>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "var(--foggy)" }}>City Location:</span>
+                      <strong style={{ color: "var(--hof)" }}>{selectedBookingListing.city}</strong>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "var(--foggy)" }}>Guest:</span>
+                      <strong style={{ color: "var(--hof)" }}>{currentUser ? currentUser.name : "Anshul (Guest)"}</strong>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ color: "var(--foggy)" }}>Duration / Stays:</span>
+                      <strong style={{ color: "var(--hof)" }}>{bookingNights} Nights</strong>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px dashed var(--deco)", paddingTop: "10px", fontSize: "15px", fontWeight: 700 }}>
+                      <span style={{ color: "var(--hof)" }}>Paid Total:</span>
+                      <span style={{ color: "var(--rausch-dark)" }}>
+                        ₹{(() => {
+                          const priceVal = parseFloat(selectedBookingListing.price.replace(/[^\d.]/g, "")) || 0;
+                          const cleaningFee = Math.round(priceVal * 0.08);
+                          const serviceFee = Math.round(priceVal * 0.04);
+                          return (priceVal * bookingNights + cleaningFee + serviceFee).toLocaleString();
+                        })()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <button
+                    onClick={() => handleLoadToWorkspace(selectedBookingListing.title || "", selectedBookingListing.city || "")}
+                    className="airbnb-btn-primary"
+                    style={{ width: "100%", justifyContent: "center", padding: "14px" }}
+                  >
+                    Plan This Stay in Workspace
+                  </button>
+                  <button
+                    onClick={() => {
+                      alert("Simulated PDF Invoice receipt downloaded successfully!");
+                    }}
+                    className="airbnb-btn-secondary"
+                    style={{ width: "100%", justifyContent: "center", padding: "12px", border: "1px solid var(--deco)" }}
+                  >
+                    Download Invoice Receipt
+                  </button>
+                  <button
+                    onClick={() => setSelectedBookingListing(null)}
+                    style={{ background: "transparent", border: "none", color: "var(--foggy)", fontSize: "13px", cursor: "pointer", textDecoration: "underline", margin: "8px auto 0" }}
+                  >
+                    Close & Browse Stays
+                  </button>
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

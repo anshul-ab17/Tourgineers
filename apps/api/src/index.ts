@@ -33,6 +33,17 @@ let expenses: Expense[] = [];
 // Dynamic listings created by the hosts (initially empty)
 let customListings: ListingCard[] = [];
 
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  password?: string;
+}
+
+let users: User[] = [
+  { id: "u1", name: "Anshul", email: "anshul@test.com", password: "password123" }
+];
+
 let checklist = [
   { id: "c1", text: "Passports & Schengen Travel Visa", checked: true, tag: "Essential" },
   { id: "c2", text: "Universal Plug Adapter (Type C/F)", checked: true, tag: "Tech" },
@@ -69,6 +80,34 @@ let currentItineraries: Record<string, any> = {
 };
 
 // --- CRUD API ENDPOINTS ---
+
+// 0. AUTHENTICATION ENDPOINTS
+app.post("/api/register", (req, res) => {
+  const { name, email, password } = req.body;
+  if (!name || !email || !password) {
+    return res.status(400).json({ error: "Name, email and password are required" });
+  }
+  const emailLower = email.toLowerCase().trim();
+  if (users.find(u => u.email === emailLower)) {
+    return res.status(400).json({ error: "Email is already registered" });
+  }
+  const newUser = { id: Date.now().toString(), name, email: emailLower, password };
+  users.push(newUser);
+  res.status(201).json({ id: newUser.id, name: newUser.name, email: newUser.email });
+});
+
+app.post("/api/login", (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: "Email and password are required" });
+  }
+  const emailLower = email.toLowerCase().trim();
+  const user = users.find(u => u.email === emailLower && u.password === password);
+  if (!user) {
+    return res.status(401).json({ error: "Invalid email or password" });
+  }
+  res.json({ id: user.id, name: user.name, email: user.email });
+});
 
 // 1. EXPENSES CRUD (Supports filtering by city)
 app.get("/api/expenses", (req, res) => {

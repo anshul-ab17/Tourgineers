@@ -8,6 +8,7 @@ import {
   DollarSign,
   CheckSquare,
   Users,
+  User,
   CloudSun,
   ArrowRight,
   Sparkles,
@@ -40,8 +41,10 @@ interface ItineraryItem {
 
 interface Expense {
   id: string;
+  city: string;
   description: string;
   amount: number;
+  currency: "USD" | "INR" | "EUR";
   paidBy: string;
 }
 
@@ -94,15 +97,34 @@ export default function Home() {
 
   // --- Feature 2: Budget State ---
   const [expenses, setExpenses] = useState<Expense[]>([
-    { id: "1", description: "Anne Frank House tickets", amount: 48, paidBy: "Alex" },
-    { id: "2", description: "Jordaan Boutique Loft booking", amount: 590, paidBy: "Emily" },
-    { id: "3", description: "Van Gogh Museum Group Pass", amount: 65, paidBy: "Sophia" },
-    { id: "4", description: "Damrak Candlelight Canal cruise", amount: 110, paidBy: "Alex" }
+    { id: "1", city: "Amsterdam", description: "Anne Frank House tickets", amount: 48, currency: "EUR", paidBy: "Alex" },
+    { id: "2", city: "Amsterdam", description: "Jordaan Boutique Loft booking", amount: 590, currency: "EUR", paidBy: "Emily" },
+    { id: "3", city: "Amsterdam", description: "Van Gogh Museum Group Pass", amount: 65, currency: "EUR", paidBy: "Sophia" },
+    { id: "4", city: "Amsterdam", description: "Damrak Candlelight Canal cruise", amount: 110, currency: "EUR", paidBy: "Alex" }
   ]);
   const [expDescription, setExpDescription] = useState("");
   const [expAmount, setExpAmount] = useState("");
   const [expPaidBy, setExpPaidBy] = useState("Alex");
-  const budgetTotal = 2500;
+  const [expCurrency, setExpCurrency] = useState<"USD" | "INR" | "EUR">("USD");
+  const [displayCurrency, setDisplayCurrency] = useState<"USD" | "INR" | "EUR">("USD");
+
+  const exchangeRates = {
+    USD: 83,
+    EUR: 90,
+    INR: 1
+  };
+
+  const convertCurrency = (amount: number, from: "USD" | "INR" | "EUR", to: "USD" | "INR" | "EUR") => {
+    if (from === to) return amount;
+    const amountInInr = amount * exchangeRates[from];
+    return amountInInr / exchangeRates[to];
+  };
+
+  const currencySymbols = {
+    USD: "$",
+    EUR: "€",
+    INR: "₹"
+  };
 
   // --- Feature 3: Weather & Checklist State ---
   const [weatherCity, setWeatherCity] = useState("Amsterdam");
@@ -147,6 +169,38 @@ export default function Home() {
   };
 
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const API_BASE = "http://localhost:3008/api";
+
+  // Fetch expenses whenever active destination changes to align with current city
+  useEffect(() => {
+    const cityName = destInput.split(',')[0]?.trim() || "Amsterdam";
+    fetch(`${API_BASE}/expenses?city=${cityName}`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setExpenses(data);
+      })
+      .catch(err => console.log("Express backend query failed, running offline fallback mode."));
+  }, [destInput]);
+
+  // Fetch initial checklist and messages on mount
+  useEffect(() => {
+    // 1. Fetch Checklist
+    fetch(`${API_BASE}/checklist`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) setChecklist(data);
+      })
+      .catch(err => {});
+
+    // 2. Fetch Messages
+    fetch(`${API_BASE}/messages`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) setChatMessages(data);
+      })
+      .catch(err => {});
+  }, []);
 
   // Click outside listener for search dropdowns
   useEffect(() => {
@@ -284,49 +338,117 @@ export default function Home() {
     const amountNum = parseFloat(expAmount);
     if (isNaN(amountNum) || amountNum <= 0) return;
 
-    const newExp: Expense = {
-      id: Date.now().toString(),
+    const cityName = destInput.split(',')[0]?.trim() || "Amsterdam";
+    const newExpPayload = {
+      city: cityName,
       description: expDescription,
       amount: amountNum,
+      currency: expCurrency,
       paidBy: expPaidBy
     };
 
-    setExpenses([...expenses, newExp]);
+    fetch(`${API_BASE}/expenses`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newExpPayload)
+    })
+      .then(res => res.json())
+      .then(addedExp => {
+        setExpenses(prev => [...prev, addedExp]);
+      })
+      .catch(() => {
+        setExpenses(prev => [...prev, { id: Date.now().toString(), ...newExpPayload }]);
+      });
+
     setExpDescription("");
     setExpAmount("");
   };
 
   // Delete Expense Action
   const handleDeleteExpense = (id: string) => {
-    setExpenses(expenses.filter(e => e.id !== id));
+    fetch(`${API_BASE}/expenses/${id}`, { method: "DELETE" })
+      .then(() => {
+        setExpenses(prev => prev.filter(e => e.id !== id));
+      })
+      .catch(() => {
+        setExpenses(prev => prev.filter(e => e.id !== id));
+      });
   };
 
   // Add Checklist Item Action
   const handleAddChecklistItem = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItemText) return;
-    setChecklist([
-      ...checklist,
-      { id: Date.now().toString(), text: newItemText, checked: false, tag: "Custom" }
-    ]);
+
+    const newChecklistPayload = {
+      text: newItemText,
+      tag: "Custom"
+    };
+
+    fetch(`${API_BASE}/checklist`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newChecklistPayload)
+    })
+      .then(res => res.json())
+      .then(addedItem => {
+        setChecklist(prev => [...prev, addedItem]);
+      })
+      .catch(() => {
+        setChecklist(prev => [...prev, { id: Date.now().toString(), text: newItemText, checked: false, tag: "Custom" }]);
+      });
+
     setNewItemText("");
   };
 
   // Toggle Checklist Item
   const toggleChecklist = (id: string) => {
-    setChecklist(
-      checklist.map(item => (item.id === id ? { ...item, checked: !item.checked } : item))
-    );
+    const targetItem = checklist.find(item => item.id === id);
+    if (!targetItem) return;
+
+    const newCheckedState = !targetItem.checked;
+
+    fetch(`${API_BASE}/checklist/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ checked: newCheckedState })
+    })
+      .then(res => res.json())
+      .then(updatedItem => {
+        setChecklist(prev => prev.map(item => item.id === id ? updatedItem : item));
+      })
+      .catch(() => {
+        setChecklist(prev => prev.map(item => item.id === id ? { ...item, checked: newCheckedState } : item));
+      });
   };
 
   // Send Chat Message Action
   const handleSendChatMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMsgText) return;
-    setChatMessages([
-      ...chatMessages,
-      { id: Date.now().toString(), user: "You", text: newMsgText, time: "Just now", avatar: "🚀" }
-    ]);
+
+    const newMsgPayload = {
+      user: "You",
+      text: newMsgText,
+      avatar: "🚀"
+    };
+
+    fetch(`${API_BASE}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newMsgPayload)
+    })
+      .then(res => res.json())
+      .then(addedMsg => {
+        setChatMessages(prev => [...prev, addedMsg]);
+      })
+      .catch(() => {
+        setChatMessages(prev => [
+          ...prev,
+          { id: Date.now().toString(), user: "You", text: newMsgText, time: "Just now", avatar: "🚀" }
+        ]);
+      });
+
     setNewMsgText("");
   };
 
@@ -387,8 +509,14 @@ export default function Home() {
     { name: "New York, USA", desc: "Manhattan lofts", short: "New York" }
   ];
 
-  // Helper counters
-  const totalSpent = expenses.reduce((sum, item) => sum + item.amount, 0);
+  // Helper counters (Multi-currency aware)
+  const totalSpent = Math.round(
+    expenses.reduce((sum, item) => {
+      const converted = convertCurrency(item.amount, item.currency || "USD", displayCurrency);
+      return sum + converted;
+    }, 0)
+  );
+  const budgetTotal = Math.round(convertCurrency(2500, "USD", displayCurrency));
   const percentSpent = Math.min(100, Math.round((totalSpent / budgetTotal) * 100));
   const remainingBudget = Math.max(0, budgetTotal - totalSpent);
   const checkedCount = checklist.filter(c => c.checked).length;
@@ -458,8 +586,8 @@ export default function Home() {
                 <div style={{ width: "16px", height: "2px", backgroundColor: "var(--hof)" }}></div>
                 <div style={{ width: "16px", height: "2px", backgroundColor: "var(--hof)" }}></div>
               </div>
-              <div style={{ width: "28px", height: "28px", borderRadius: "var(--radius-full)", backgroundColor: "var(--rausch)", color: "var(--hof)", display: "flex", justifyContent: "center", alignItems: "center", fontWeight: 700, fontSize: "11px" }}>
-                T
+              <div style={{ width: "28px", height: "28px", borderRadius: "var(--radius-full)", backgroundColor: "var(--rausch)", color: "var(--hof)", display: "flex", justifyContent: "center", alignItems: "center" }}>
+                <User size={16} />
               </div>
             </div>
           </div>
@@ -1128,30 +1256,59 @@ export default function Home() {
                   {/* BUDGET TAB */}
                   {activeTab === "budget" && (
                     <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "10px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
                         <div>
                           <h3 style={{ fontSize: "18px", color: "var(--hof)", marginBottom: "4px" }}>Split Expenses Console</h3>
                           <p style={{ fontSize: "13px", color: "var(--foggy)" }}>Divide shared lodging, flights, and meals equally.</p>
                         </div>
-                        <div style={{ textAlign: "right" }}>
-                          <span style={{ fontSize: "12px", color: "var(--foggy)", fontWeight: 600 }}>LIMIT: $2,500</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+                          {/* Currency Switcher */}
+                          <div style={{ display: "flex", gap: "4px", background: "var(--grey200)", padding: "4px", borderRadius: "var(--radius-pill)", border: "1px solid var(--deco)" }}>
+                            {(["USD", "INR", "EUR"] as const).map(curr => (
+                              <button
+                                key={curr}
+                                onClick={() => setDisplayCurrency(curr)}
+                                style={{
+                                  background: displayCurrency === curr ? "var(--white)" : "transparent",
+                                  border: "none",
+                                  color: "var(--hof)",
+                                  fontWeight: displayCurrency === curr ? 700 : 500,
+                                  padding: "6px 12px",
+                                  borderRadius: "var(--radius-pill)",
+                                  fontSize: "12px",
+                                  cursor: "pointer",
+                                  boxShadow: displayCurrency === curr ? "0 2px 6px rgba(0,0,0,0.08)" : "none",
+                                  transition: "all 0.15s"
+                                }}
+                              >
+                                {currencySymbols[curr]} {curr}
+                              </button>
+                            ))}
+                          </div>
+                          <span style={{ fontSize: "12px", color: "var(--foggy)", fontWeight: 700 }}>
+                            LIMIT: {currencySymbols[displayCurrency]}{budgetTotal}
+                          </span>
                         </div>
                       </div>
 
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", marginBottom: "28px" }}>
                         <div className="airbnb-card" style={{ padding: "20px" }}>
                           <span style={{ fontSize: "11px", color: "var(--foggy)", fontWeight: 700, textTransform: "uppercase" }}>TOTAL SPENT</span>
-                          <div style={{ fontSize: "28px", fontWeight: 700, color: "var(--hof)", margin: "4px 0" }}>${totalSpent}</div>
+                          <div style={{ fontSize: "28px", fontWeight: 700, color: "var(--hof)", margin: "4px 0" }}>
+                            {currencySymbols[displayCurrency]}{totalSpent}
+                          </div>
                           <div style={{ width: "100%", height: "6px", backgroundColor: "var(--grey200)", borderRadius: "var(--radius-pill)", overflow: "hidden", margin: "8px 0" }}>
                             <div style={{ width: `${percentSpent}%`, height: "100%", backgroundColor: "var(--rausch)" }}></div>
                           </div>
-                          <span style={{ fontSize: "12px", color: "var(--foggy)" }}>{percentSpent}% of total budget.</span>
+                          <span style={{ fontSize: "12px", color: "var(--foggy)" }}>{percentSpent}% of active budget limit.</span>
                         </div>
                         <div className="airbnb-card" style={{ padding: "20px" }}>
                           <span style={{ fontSize: "11px", color: "var(--foggy)", fontWeight: 700, textTransform: "uppercase" }}>REMAINING</span>
-                          <div style={{ fontSize: "28px", fontWeight: 700, color: "var(--hof)", margin: "4px 0" }}>${remainingBudget}</div>
+                          <div style={{ fontSize: "28px", fontWeight: 700, color: "var(--hof)", margin: "4px 0" }}>
+                            {currencySymbols[displayCurrency]}{remainingBudget}
+                          </div>
                           <span style={{ fontSize: "12px", color: "var(--foggy)" }}>
-                            Equal split: <strong style={{ color: "var(--hof)" }}>${Math.round(totalSpent / 3)}</strong> per person.
+                            Equal split: <strong style={{ color: "var(--hof)" }}>{currencySymbols[displayCurrency]}{Math.round(totalSpent / 3)}</strong> per person.
                           </span>
                         </div>
                       </div>
@@ -1165,14 +1322,26 @@ export default function Home() {
                           className="saas-input"
                           style={{ flex: 1, minWidth: "150px" }}
                         />
-                        <input
-                          type="number"
-                          placeholder="Amount"
-                          value={expAmount}
-                          onChange={(e) => setExpAmount(e.target.value)}
-                          className="saas-input"
-                          style={{ width: "100px" }}
-                        />
+                        <div style={{ display: "flex", gap: "6px" }}>
+                          <input
+                            type="number"
+                            placeholder="Amount"
+                            value={expAmount}
+                            onChange={(e) => setExpAmount(e.target.value)}
+                            className="saas-input"
+                            style={{ width: "100px" }}
+                          />
+                          <select
+                            value={expCurrency}
+                            onChange={(e) => setExpCurrency(e.target.value as any)}
+                            className="saas-select"
+                            style={{ width: "85px" }}
+                          >
+                            <option value="USD">USD ($)</option>
+                            <option value="INR">INR (₹)</option>
+                            <option value="EUR">EUR (€)</option>
+                          </select>
+                        </div>
                         <select
                           value={expPaidBy}
                           onChange={(e) => setExpPaidBy(e.target.value)}
@@ -1186,25 +1355,41 @@ export default function Home() {
                       </form>
 
                       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                        {expenses.map(expense => (
-                          <div key={expense.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 18px", background: "var(--white)", border: "1px solid var(--deco)", borderRadius: "var(--radius-md)" }}>
-                            <div>
-                              <span style={{ fontWeight: 600, fontSize: "14px", color: "var(--hof)" }}>{expense.description}</span>
-                              <span style={{ marginLeft: "12px", fontSize: "11px", background: "var(--grey200)", padding: "2px 8px", borderRadius: "var(--radius-sm)", color: "var(--foggy)", fontWeight: 600 }}>
-                                Paid by {expense.paidBy}
-                              </span>
+                        {expenses.map(expense => {
+                          const origSymbol = currencySymbols[expense.currency || "USD"];
+                          const dispSymbol = currencySymbols[displayCurrency];
+                          const convertedVal = Math.round(convertCurrency(expense.amount, expense.currency || "USD", displayCurrency));
+                          const hasDiffCurrency = (expense.currency || "USD") !== displayCurrency;
+
+                          return (
+                            <div key={expense.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 18px", background: "var(--white)", border: "1px solid var(--deco)", borderRadius: "var(--radius-md)" }}>
+                              <div>
+                                <span style={{ fontWeight: 600, fontSize: "14px", color: "var(--hof)" }}>{expense.description}</span>
+                                <span style={{ marginLeft: "12px", fontSize: "11px", background: "var(--grey200)", padding: "2px 8px", borderRadius: "var(--radius-sm)", color: "var(--foggy)", fontWeight: 600 }}>
+                                  Paid by {expense.paidBy}
+                                </span>
+                              </div>
+                              <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                                <div style={{ textAlign: "right" }}>
+                                  <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--hof)" }}>
+                                    {dispSymbol}{convertedVal}
+                                  </div>
+                                  {hasDiffCurrency && (
+                                    <div style={{ fontSize: "11px", color: "var(--foggy)" }}>
+                                      Original: {origSymbol}{expense.amount}
+                                    </div>
+                                  )}
+                                </div>
+                                <button
+                                  onClick={() => handleDeleteExpense(expense.id)}
+                                  style={{ background: "transparent", border: "none", color: "var(--rausch-dark)", cursor: "pointer", display: "flex" }}
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
                             </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                              <span style={{ fontWeight: 700, fontSize: "14px", color: "var(--hof)" }}>${expense.amount}</span>
-                              <button
-                                onClick={() => handleDeleteExpense(expense.id)}
-                                style={{ background: "transparent", border: "none", color: "var(--rausch)", cursor: "pointer", display: "flex" }}
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}

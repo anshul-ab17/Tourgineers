@@ -173,17 +173,17 @@ export default function Home() {
       { id: "del-1", title: "Heritage Haveli Suite in South Delhi", type: "Private room in home", price: "₹4,500", rating: "4.94", imageUrl: "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=600&q=80", isFav: true },
       { id: "del-2", title: "Modern Terrace Apartment in Hauz Khas", type: "Entire rental unit", price: "₹5,200", rating: "4.90", imageUrl: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=600&q=80", isFav: false },
       { id: "del-3", title: "Elegant Greenery Bungalow in Lutyens", type: "Entire bungalow", price: "₹12,800", rating: "4.97", imageUrl: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=600&q=80", isFav: true },
-      { id: "del-4", title: "Artistic Studio with Lotus Temple views", type: "Entire studio", price: "₹3,900", rating: "4.86", imageUrl: "https://images.unsplash.com/photo-1587474260584-136574528ed5?auto=format&fit=crop&w=600&q=80", isFav: false },
+      { id: "del-4", title: "Artistic Studio with Lotus Temple views", type: "Entire studio", price: "₹3,900", rating: "4.86", imageUrl: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=600&q=80", isFav: false },
       { id: "del-5", title: "Cozy Garden Suite near Connaught Place", type: "Entire guest suite", price: "₹6,500", rating: "4.89", imageUrl: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=600&q=80", isFav: true },
-      { id: "del-6", title: "Sleek Modern Loft in Vasant Vihar", type: "Entire loft", price: "₹8,900", rating: "4.91", imageUrl: "https://images.unsplash.com/photo-1617806118233-18e1db207f62?auto=format&fit=crop&w=600&q=80", isFav: false }
+      { id: "del-6", title: "Sleek Modern Loft in Vasant Vihar", type: "Entire loft", price: "₹8,900", rating: "4.91", imageUrl: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=600&q=80", isFav: false }
     ],
     Tokyo: [
       { id: "tok-1", title: "Traditional Tatami Ryokan in Asakusa", type: "Private room in ryokan", price: "₹8,500", rating: "4.97", imageUrl: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=600&q=80", isFav: true },
       { id: "tok-2", title: "Compact High-Tech Studio in Shibuya", type: "Entire rental unit", price: "₹11,200", rating: "4.91", imageUrl: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=600&q=80", isFav: false },
       { id: "tok-3", title: "Skyscraper Skyline Flat in Shinjuku", type: "Entire condo", price: "₹15,600", rating: "4.95", imageUrl: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=600&q=80", isFav: true },
       { id: "tok-4", title: "Zen Garden Oasis in Meguro", type: "Entire residential home", price: "₹18,000", rating: "4.98", imageUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80", isFav: true },
-      { id: "tok-5", title: "Minimalist Loft near Roppongi Hills", type: "Entire loft", price: "₹14,900", rating: "4.88", imageUrl: "https://images.unsplash.com/photo-1505693395321-883724634266?auto=format&fit=crop&w=600&q=80", isFav: false },
-      { id: "tok-6", title: "Modern Design Penthouse in Ginza", type: "Entire rental unit", price: "₹22,000", rating: "4.96", imageUrl: "https://images.unsplash.com/photo-1540959733332-eab4deceeaf7?auto=format&fit=crop&w=600&q=80", isFav: false }
+      { id: "tok-5", title: "Minimalist Loft near Roppongi Hills", type: "Entire loft", price: "₹14,900", rating: "4.88", imageUrl: "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=600&q=80", isFav: false },
+      { id: "tok-6", title: "Modern Design Penthouse in Ginza", type: "Entire rental unit", price: "₹22,000", rating: "4.96", imageUrl: "https://images.unsplash.com/photo-1507089947368-19c1da9775ae?auto=format&fit=crop&w=600&q=80", isFav: false }
     ],
     Singapore: [
       { id: "sin-1", title: "Marina Bay View Penthouse", type: "Entire condominium", price: "₹28,500", rating: "4.98", imageUrl: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=600&q=80", isFav: true },
@@ -195,15 +195,15 @@ export default function Home() {
     ],
     London: [
       { id: "lon-1", title: "Victorian Brick Townhouse in Kensington", type: "Entire townhouse", price: "₹21,000", rating: "4.96", imageUrl: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=600&q=80", isFav: true },
-      { id: "lon-2", title: "Cozy Garden Apartment in Shoreditch", type: "Entire rental unit", price: "₹14,500", rating: "4.91", imageUrl: "https://images.unsplash.com/photo-1502672090372-20c2743be1c8?auto=format&fit=crop&w=600&q=80", isFav: false },
+      { id: "lon-2", title: "Cozy Garden Apartment in Shoreditch", type: "Entire rental unit", price: "₹14,500", rating: "4.91", imageUrl: "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=600&q=80", isFav: false },
       { id: "lon-3", title: "Elegant Flat near Hyde Park", type: "Entire loft", price: "₹18,200", rating: "4.94", imageUrl: "https://images.unsplash.com/photo-1536376072261-38c75010e6c9?auto=format&fit=crop&w=600&q=80", isFav: true },
       { id: "lon-4", title: "Charming Chelsea Study & Apartment", type: "Entire rental unit", price: "₹16,900", rating: "4.95", imageUrl: "https://images.unsplash.com/photo-1560185007-c5ca9d2c014d?auto=format&fit=crop&w=600&q=80", isFav: false },
-      { id: "lon-5", title: "Bright Modern flat in Greenwich", type: "Entire condo", price: "₹11,000", rating: "4.87", imageUrl: "https://images.unsplash.com/photo-1527030280862-64139fbe04ca?auto=format&fit=crop&w=600&q=80", isFav: true },
+      { id: "lon-5", title: "Bright Modern flat in Greenwich", type: "Entire condo", price: "₹11,000", rating: "4.87", imageUrl: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=600&q=80", isFav: true },
       { id: "lon-6", title: "Classic Mews House in Westminster", type: "Entire townhouse", price: "₹25,000", rating: "4.98", imageUrl: "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=600&q=80", isFav: true }
     ],
     NewYork: [
       { id: "nyc-1", title: "Manhattan Loft with Skyline view", type: "Entire loft", price: "₹24,500", rating: "4.97", imageUrl: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=600&q=80", isFav: true },
-      { id: "nyc-2", title: "Brooklyn Industrial Brick Flat", type: "Entire condo", price: "₹16,200", rating: "4.92", imageUrl: "https://images.unsplash.com/photo-1502005229762-fc1b2c812ca9?auto=format&fit=crop&w=600&q=80", isFav: false },
+      { id: "nyc-2", title: "Brooklyn Industrial Brick Flat", type: "Entire condo", price: "₹16,200", rating: "4.92", imageUrl: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=600&q=80", isFav: false },
       { id: "nyc-3", title: "High-Rise Central Park Penthouse", type: "Entire penthouse", price: "₹38,000", rating: "4.99", imageUrl: "https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&w=600&q=80", isFav: true },
       { id: "nyc-4", title: "Chic West Village Studio", type: "Entire studio", price: "₹13,900", rating: "4.89", imageUrl: "https://images.unsplash.com/photo-1560184897-ae75f418493e?auto=format&fit=crop&w=600&q=80", isFav: false },
       { id: "nyc-5", title: "Bright Chelsea Apartment", type: "Entire loft", price: "₹18,000", rating: "4.93", imageUrl: "https://images.unsplash.com/photo-1536376072261-38c75010e6c9?auto=format&fit=crop&w=600&q=80", isFav: true },

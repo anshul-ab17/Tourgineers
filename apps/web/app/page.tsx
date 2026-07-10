@@ -64,8 +64,8 @@ export default function Home() {
   const [heroDays, setHeroDays] = useState("5");
   const [activeDropdown, setActiveDropdown] = useState<DropdownType>(null);
   
-  // Active Selected City for the Grid
-  const [selectedCity, setSelectedCity] = useState("Amsterdam");
+  // Active Selected City ("All" by default to trigger the horizontal scrollers)
+  const [selectedCity, setSelectedCity] = useState("All");
 
   // Collaborative Console Tabs
   const [activeTab, setActiveTab] = useState<TabType>("ai-planner");
@@ -364,6 +364,19 @@ export default function Home() {
     }
   };
 
+  // Handle Horizontal scroller buttons click
+  const handleScroll = (cityName: string, direction: "left" | "right") => {
+    const scrollerId = `${cityName.replace(/\s/g, "")}-scroller`;
+    const container = document.getElementById(scrollerId);
+    if (container) {
+      const cardWidth = container.firstElementChild?.clientWidth || 300;
+      container.scrollBy({
+        left: direction === "left" ? -(cardWidth + 24) : (cardWidth + 24),
+        behavior: "smooth"
+      });
+    }
+  };
+
   // Dropdown list values
   const suggestedDestinations = [
     { name: "Amsterdam, Netherlands", desc: "For canal lovers", short: "Amsterdam" },
@@ -381,7 +394,7 @@ export default function Home() {
   const checkedCount = checklist.filter(c => c.checked).length;
   const checklistPercent = checklist.length > 0 ? Math.round((checkedCount / checklist.length) * 100) : 0;
 
-  // Active City Listings Grid Data
+  // Active City Listings Grid Data (for single city view)
   const currentCityKey = selectedCity.replace(/\s/g, "");
   const currentCityListings: ListingCard[] = cityListingsData[currentCityKey] || cityListingsData["Amsterdam"] || [];
 
@@ -778,6 +791,23 @@ export default function Home() {
             {/* CITIES TABS SWITCHER (Airbnb Filter bar style) */}
             <section style={{ padding: "1rem 0 2rem", borderBottom: "1px solid var(--deco)" }}>
               <div style={{ display: "flex", gap: "16px", overflowX: "auto", paddingBottom: "8px", justifyContent: "center" }}>
+                <button
+                  onClick={() => setSelectedCity("All")}
+                  style={{
+                    background: selectedCity === "All" ? "var(--rausch)" : "var(--grey200)",
+                    border: "none",
+                    color: selectedCity === "All" ? "var(--white)" : "var(--hof)",
+                    borderRadius: "var(--radius-pill)",
+                    padding: "10px 24px",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    boxShadow: selectedCity === "All" ? "0 4px 12px rgba(255, 56, 92, 0.2)" : "none"
+                  }}
+                >
+                  All Stays
+                </button>
                 {["Amsterdam", "Delhi", "Tokyo", "Singapore", "London", "New York"].map(city => (
                   <button
                     key={city}
@@ -795,55 +825,151 @@ export default function Home() {
                       boxShadow: selectedCity === city ? "0 4px 12px rgba(255, 56, 92, 0.2)" : "none"
                     }}
                   >
-                    {city} Stays
+                    {city}
                   </button>
                 ))}
               </div>
             </section>
 
-            {/* DYNAMIC CARD GRID */}
-            <section style={{ padding: "3rem 0" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-                <h2 style={{ fontSize: "22px", fontWeight: 600 }}>Stays in {selectedCity}</h2>
-                <span style={{ fontSize: "14px", color: "var(--foggy)", fontWeight: 600 }}>6 verified properties found</span>
-              </div>
+            {/* LISTINGS DISPLAY SEGMENT */}
+            {selectedCity === "All" ? (
+              // 1. ALL STAYS VIEW: Row-based horizontal scroller for each of the 6 cities, 4 visible in line
+              <div style={{ display: "flex", flexDirection: "column", gap: "48px", padding: "3rem 0" }}>
+                {Object.entries(cityListingsData).map(([cityName, listings]) => {
+                  const displayCityName = cityName === "NewYork" ? "New York" : cityName;
+                  const scrollerId = `${cityName}-scroller`;
+                  return (
+                    <div key={cityName} style={{ position: "relative" }}>
+                      
+                      {/* Section header containing title and scroller buttons */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
+                        <h2 style={{ fontSize: "22px", fontWeight: 600, color: "var(--hof)" }}>Stays in {displayCityName}</h2>
+                        
+                        {/* scroller buttons */}
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          <button
+                            onClick={() => handleScroll(cityName, "left")}
+                            style={{ width: "36px", height: "36px", borderRadius: "var(--radius-full)", border: "1px solid var(--deco)", background: "var(--white)", display: "flex", justifyContent: "center", alignItems: "center", cursor: "pointer", color: "var(--hof)", transition: "all 0.15s" }}
+                            onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--hof)"}
+                            onMouseLeave={(e) => e.currentTarget.style.borderColor = "var(--deco)"}
+                          >
+                            <ChevronLeft size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleScroll(cityName, "right")}
+                            style={{ width: "36px", height: "36px", borderRadius: "var(--radius-full)", border: "1px solid var(--deco)", background: "var(--white)", display: "flex", justifyContent: "center", alignItems: "center", cursor: "pointer", color: "var(--hof)", transition: "all 0.15s" }}
+                            onMouseEnter={(e) => e.currentTarget.style.borderColor = "var(--hof)"}
+                            onMouseLeave={(e) => e.currentTarget.style.borderColor = "var(--deco)"}
+                          >
+                            <ChevronRight size={18} />
+                          </button>
+                        </div>
+                      </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "24px" }}>
-                {currentCityListings.map(card => (
-                  <div
-                    key={card.id}
-                    className="airbnb-card"
-                    style={{ padding: 0, border: "none", boxShadow: "none", cursor: "pointer" }}
-                    onClick={() => handleCardClick(card.title, selectedCity)}
-                  >
-                    <div style={{ position: "relative", width: "100%", aspectRatio: "4/3", borderRadius: "var(--radius-card)", overflow: "hidden", backgroundColor: "var(--grey200)" }}>
-                      <img src={card.imageUrl} alt={card.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      <div style={{ position: "absolute", top: "12px", left: "12px" }}>
-                        <div className="guest-fav-badge">Guest favourite</div>
-                      </div>
-                      <button
-                        onClick={(e) => toggleWishlist(card.id, e)}
-                        style={{ position: "absolute", top: "12px", right: "12px", background: "transparent", border: "none", cursor: "pointer" }}
+                      {/* Horizontal scroller showing all properties, showing 4 in a line on large screens */}
+                      <div
+                        id={scrollerId}
+                        className="city-scroller"
+                        style={{
+                          display: "flex",
+                          gap: "24px",
+                          overflowX: "auto",
+                          scrollBehavior: "smooth",
+                          paddingBottom: "8px"
+                        }}
                       >
-                        <Heart size={24} style={{ fill: wishlist[card.id] ? "var(--rausch)" : "transparent", stroke: wishlist[card.id] ? "var(--rausch)" : "var(--white)", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }} />
-                      </button>
-                    </div>
-                    <div style={{ padding: "12px 2px 0" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                        <h3 style={{ fontSize: "15px", fontWeight: 600, color: "var(--hof)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "80%" }}>
-                          {card.title}
-                        </h3>
-                        <span style={{ fontSize: "14px", color: "var(--hof)", fontWeight: 600 }}>★ {card.rating}</span>
+                        {listings.map(card => (
+                          <div
+                            key={card.id}
+                            className="airbnb-card"
+                            style={{
+                              padding: 0,
+                              border: "none",
+                              boxShadow: "none",
+                              cursor: "pointer",
+                              flex: "0 0 calc(25% - 18px)", // Displays exactly 4 in a line
+                              minWidth: "280px"
+                            }}
+                            onClick={() => handleCardClick(card.title, displayCityName)}
+                          >
+                            <div style={{ position: "relative", width: "100%", aspectRatio: "4/3", borderRadius: "var(--radius-card)", overflow: "hidden", backgroundColor: "var(--grey200)" }}>
+                              <img src={card.imageUrl} alt={card.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                              <div style={{ position: "absolute", top: "12px", left: "12px" }}>
+                                <div className="guest-fav-badge">Guest favourite</div>
+                              </div>
+                              <button
+                                onClick={(e) => toggleWishlist(card.id, e)}
+                                style={{ position: "absolute", top: "12px", right: "12px", background: "transparent", border: "none", cursor: "pointer" }}
+                              >
+                                <Heart size={24} style={{ fill: wishlist[card.id] ? "var(--rausch)" : "transparent", stroke: wishlist[card.id] ? "var(--rausch)" : "var(--white)", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }} />
+                              </button>
+                            </div>
+                            <div style={{ padding: "12px 2px 0" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                                <h3 style={{ fontSize: "15px", fontWeight: 600, color: "var(--hof)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "80%" }}>
+                                  {card.title}
+                                </h3>
+                                <span style={{ fontSize: "14px", color: "var(--hof)", fontWeight: 600 }}>★ {card.rating}</span>
+                              </div>
+                              <span style={{ fontSize: "13px", color: "var(--foggy)", display: "block", marginTop: "2px" }}>{card.type}</span>
+                              <span style={{ fontSize: "14px", color: "var(--hof)", fontWeight: 700, display: "block", marginTop: "4px" }}>
+                                {card.price} <span style={{ fontWeight: 400, color: "var(--foggy)", fontSize: "13px" }}>/ night</span>
+                              </span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <span style={{ fontSize: "13px", color: "var(--foggy)", display: "block", marginTop: "2px" }}>{card.type}</span>
-                      <span style={{ fontSize: "14px", color: "var(--hof)", fontWeight: 700, display: "block", marginTop: "4px" }}>
-                        {card.price} <span style={{ fontWeight: 400, color: "var(--foggy)", fontSize: "13px" }}>/ night</span>
-                      </span>
+
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
-            </section>
+            ) : (
+              // 2. SINGLE CITY VIEW: Standard full grid view containing all 6 properties
+              <section style={{ padding: "3rem 0" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+                  <h2 style={{ fontSize: "22px", fontWeight: 600 }}>Stays in {selectedCity}</h2>
+                  <span style={{ fontSize: "14px", color: "var(--foggy)", fontWeight: 600 }}>6 verified properties found</span>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "24px" }}>
+                  {currentCityListings.map(card => (
+                    <div
+                      key={card.id}
+                      className="airbnb-card"
+                      style={{ padding: 0, border: "none", boxShadow: "none", cursor: "pointer" }}
+                      onClick={() => handleCardClick(card.title, selectedCity)}
+                    >
+                      <div style={{ position: "relative", width: "100%", aspectRatio: "4/3", borderRadius: "var(--radius-card)", overflow: "hidden", backgroundColor: "var(--grey200)" }}>
+                        <img src={card.imageUrl} alt={card.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <div style={{ position: "absolute", top: "12px", left: "12px" }}>
+                          <div className="guest-fav-badge">Guest favourite</div>
+                        </div>
+                        <button
+                          onClick={(e) => toggleWishlist(card.id, e)}
+                          style={{ position: "absolute", top: "12px", right: "12px", background: "transparent", border: "none", cursor: "pointer" }}
+                        >
+                          <Heart size={24} style={{ fill: wishlist[card.id] ? "var(--rausch)" : "transparent", stroke: wishlist[card.id] ? "var(--rausch)" : "var(--white)", filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }} />
+                        </button>
+                      </div>
+                      <div style={{ padding: "12px 2px 0" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                          <h3 style={{ fontSize: "15px", fontWeight: 600, color: "var(--hof)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "80%" }}>
+                            {card.title}
+                          </h3>
+                          <span style={{ fontSize: "14px", color: "var(--hof)", fontWeight: 600 }}>★ {card.rating}</span>
+                        </div>
+                        <span style={{ fontSize: "13px", color: "var(--foggy)", display: "block", marginTop: "2px" }}>{card.type}</span>
+                        <span style={{ fontSize: "14px", color: "var(--hof)", fontWeight: 700, display: "block", marginTop: "4px" }}>
+                          {card.price} <span style={{ fontWeight: 400, color: "var(--foggy)", fontSize: "13px" }}>/ night</span>
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
           </div>
         )}
 

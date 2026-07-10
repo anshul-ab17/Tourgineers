@@ -458,7 +458,7 @@ export default function Home() {
                 <div style={{ width: "16px", height: "2px", backgroundColor: "var(--hof)" }}></div>
                 <div style={{ width: "16px", height: "2px", backgroundColor: "var(--hof)" }}></div>
               </div>
-              <div style={{ width: "28px", height: "28px", borderRadius: "var(--radius-full)", backgroundColor: "var(--rausch)", color: "var(--white)", display: "flex", justifyContent: "center", alignItems: "center", fontWeight: 700, fontSize: "11px" }}>
+              <div style={{ width: "28px", height: "28px", borderRadius: "var(--radius-full)", backgroundColor: "var(--rausch)", color: "var(--hof)", display: "flex", justifyContent: "center", alignItems: "center", fontWeight: 700, fontSize: "11px" }}>
                 T
               </div>
             </div>
@@ -796,7 +796,7 @@ export default function Home() {
                   style={{
                     background: selectedCity === "All" ? "var(--rausch)" : "var(--grey200)",
                     border: "none",
-                    color: selectedCity === "All" ? "var(--white)" : "var(--hof)",
+                    color: "var(--hof)",
                     borderRadius: "var(--radius-pill)",
                     padding: "10px 24px",
                     fontSize: "14px",
@@ -815,7 +815,7 @@ export default function Home() {
                     style={{
                       background: selectedCity === city ? "var(--rausch)" : "var(--grey200)",
                       border: "none",
-                      color: selectedCity === city ? "var(--white)" : "var(--hof)",
+                      color: "var(--hof)",
                       borderRadius: "var(--radius-pill)",
                       padding: "10px 24px",
                       fontSize: "14px",
@@ -1236,7 +1236,7 @@ export default function Home() {
                               borderColor: weatherCity.includes(city) ? "var(--rausch)" : "var(--bobo)",
                               borderRadius: "var(--radius-pill)",
                               padding: "8px 16px",
-                              color: weatherCity.includes(city) ? "var(--white)" : "var(--hof)",
+                              color: "var(--hof)",
                               fontSize: "12px",
                               fontWeight: 600,
                               cursor: "pointer",
@@ -1385,8 +1385,7 @@ export default function Home() {
               <div>
                 <h4 style={{ fontSize: "12px", color: "var(--hof)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "16px" }}>Engineering</h4>
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "14px" }}>
-                  <a href="#" style={{ color: "var(--foggy)", textDecoration: "none" }}>Changelog</a>
-                  <a href="#" style={{ color: "var(--foggy)", textDecoration: "none" }}>GitHub</a>
+                  <a href="https://github.com/anshul-ab17/Tourgineers/" target="_blank" rel="noopener noreferrer" style={{ color: "var(--foggy)", textDecoration: "none" }}>GitHub</a>
                 </div>
               </div>
             </div>
@@ -1395,8 +1394,8 @@ export default function Home() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--deco)", paddingTop: "24px", fontSize: "14px", color: "var(--foggy)", flexWrap: "wrap", gap: "12px" }}>
             <span>© 2026 Tourngineers. All rights reserved.</span>
             <div style={{ display: "flex", gap: "24px" }}>
-              <a href="#" style={{ color: "var(--foggy)", textDecoration: "none" }}>Twitter</a>
-              <a href="#" style={{ color: "var(--foggy)", textDecoration: "none" }}>LinkedIn</a>
+              <a href="https://x.com/anshul_ab17" target="_blank" rel="noopener noreferrer" style={{ color: "var(--foggy)", textDecoration: "none" }}>Twitter</a>
+              <a href="https://www.linkedin.com/in/anshul-bt17/" target="_blank" rel="noopener noreferrer" style={{ color: "var(--foggy)", textDecoration: "none" }}>LinkedIn</a>
             </div>
           </div>
 

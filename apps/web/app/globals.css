@@ -3,7 +3,8 @@
   --grey200: #f7f7f7; /* Off-white hover */
   --foggy: #6a6a6a; /* Muted text */
   --hof: #222222; /* Primary dark text */
-  --rausch: #ff385c; /* Signature coral-red */
+  --rausch: #ffd3ac; /* Signature peach */
+  --rausch-dark: #d87a38; /* High-contrast legible peach for text */
   --bobo: #b0b0b0;
   --deco: #dddddd;
   --grey500: #c1c1c1;
@@ -202,13 +203,13 @@ p {
 
 .search-submit-btn {
   background: var(--rausch);
-  color: var(--white);
+  color: var(--hof);
   border: none;
   border-radius: var(--radius-full);
   padding: 12px 24px;
   font-family: var(--font-cereal), sans-serif;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -218,7 +219,7 @@ p {
 }
 
 .search-submit-btn:hover {
-  background-color: #e02f53;
+  background-color: #fcae74;
 }
 
 .search-submit-btn:active {
@@ -364,7 +365,7 @@ p {
 
 .sidebar-btn-saas.active {
   background: var(--white);
-  color: var(--rausch);
+  color: var(--rausch-dark);
   font-weight: 600;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   border: 1px solid var(--deco);
@@ -378,12 +379,12 @@ p {
 /* Primary CTA Button style */
 .airbnb-btn-primary {
   background: var(--rausch);
-  color: var(--white);
+  color: var(--hof);
   border: none;
   border-radius: var(--radius-md);
   padding: 12px 24px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -392,7 +393,7 @@ p {
 }
 
 .airbnb-btn-primary:hover {
-  background-color: #e02f53;
+  background-color: #fcae74;
 }
 
 .airbnb-btn-primary:active {
@@ -543,7 +544,7 @@ p {
 
 .calendar-day-number.selected {
   background-color: var(--rausch);
-  color: var(--white);
+  color: var(--hof);
   font-weight: 700;
 }
 

@@ -171,6 +171,12 @@ app.post("/api/listings", (req, res) => {
   res.status(201).json(newListing);
 });
 
+app.delete("/api/listings/:id", (req, res) => {
+  const { id } = req.params;
+  customListings = customListings.filter(l => l.id !== id);
+  res.json({ message: "Listing deleted successfully", id });
+});
+
 // 3. CHECKLIST CRUD
 app.get("/api/checklist", (req, res) => {
   res.json(checklist);

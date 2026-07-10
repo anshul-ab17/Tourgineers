@@ -123,6 +123,13 @@ export default function Home() {
   const [dodoPin, setDodoPin] = useState("");
   const [dodoWalletBalance, setDodoWalletBalance] = useState(500000);
 
+  // --- Itinerary Editing State ---
+  const [activeAddActivityDay, setActiveAddActivityDay] = useState<string | null>(null);
+  const [newActTime, setNewActTime] = useState("");
+  const [newActTitle, setNewActTitle] = useState("");
+  const [newActLocation, setNewActLocation] = useState("");
+  const [newActNotes, setNewActNotes] = useState("");
+
   // --- Host Admin Panel State ---
   const [customListings, setCustomListings] = useState<ListingCard[]>([]);
   const [hostTitle, setHostTitle] = useState("");
@@ -504,6 +511,45 @@ export default function Home() {
     setHeaderTab("homes");
   };
 
+  // Delete Listing Action
+  const handleDeleteListing = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setHostError("");
+    setHostSuccess("");
+    fetch(`${API_BASE}/listings/${id}`, {
+      method: "DELETE"
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Delete failed");
+        return res.json();
+      })
+      .then(() => {
+        setCustomListings(prev => prev.filter(l => l.id !== id));
+        setHostSuccess("Listing removed successfully!");
+      })
+      .catch(() => {
+        setCustomListings(prev => prev.filter(l => l.id !== id));
+        setHostSuccess("Listing removed (Offline Fallback Mode)!");
+      });
+  };
+
+  // Delete Checklist Item Action
+  const handleDeleteChecklistItem = (id: string) => {
+    fetch(`${API_BASE}/checklist/${id}`, {
+      method: "DELETE"
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Delete failed");
+        return res.json();
+      })
+      .then(() => {
+        setChecklist(prev => prev.filter(item => item.id !== id));
+      })
+      .catch(() => {
+        setChecklist(prev => prev.filter(item => item.id !== id));
+      });
+  };
+
   // Complete Booking via Dodo Pay
   const handleCompleteDodoPayment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -533,6 +579,63 @@ export default function Home() {
     setHeaderTab("planner");
     handleGenerateItinerary(fullLoc, daysInput);
     setSelectedBookingListing(null); // close booking details modal
+  };
+
+  // Add Custom Activity Action
+  const handleAddCustomActivity = (day: string, e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newActTitle.trim()) return;
+
+    const updatedItinerary = { ...generatedItinerary };
+    if (!updatedItinerary[day]) {
+      updatedItinerary[day] = [];
+    }
+
+    const newItem = {
+      time: newActTime.trim() || "12:00 PM",
+      activity: newActTitle.trim(),
+      location: newActLocation.trim() || "TBD",
+      notes: newActNotes.trim() || ""
+    };
+
+    updatedItinerary[day] = [...updatedItinerary[day], newItem];
+    setGeneratedItinerary(updatedItinerary);
+
+    // Reset inputs
+    setNewActTime("");
+    setNewActTitle("");
+    setNewActLocation("");
+    setNewActNotes("");
+    setActiveAddActivityDay(null);
+
+    // Persist to Express backend
+    fetch(`${API_BASE}/itinerary`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        destination: destInput || "Amsterdam, Netherlands",
+        itinerary: updatedItinerary
+      })
+    }).catch(err => console.log("Failed to persist itinerary."));
+  };
+
+  // Delete Custom Activity Action
+  const handleDeleteCustomActivity = (day: string, idxToRemove: number) => {
+    const updatedItinerary = { ...generatedItinerary };
+    if (!updatedItinerary[day]) return;
+
+    updatedItinerary[day] = updatedItinerary[day].filter((_, idx) => idx !== idxToRemove);
+    setGeneratedItinerary(updatedItinerary);
+
+    // Persist to Express backend
+    fetch(`${API_BASE}/itinerary`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        destination: destInput || "Amsterdam, Netherlands",
+        itinerary: updatedItinerary
+      })
+    }).catch(err => console.log("Failed to persist itinerary."));
   };
 
   // Add Expense Action
@@ -632,9 +735,9 @@ export default function Home() {
     if (!newMsgText) return;
 
     const newMsgPayload = {
-      user: "You",
+      user: currentUser ? currentUser.name : "You",
       text: newMsgText,
-      avatar: "🚀"
+      avatar: currentUser ? "👤" : "🚀"
     };
 
     fetch(`${API_BASE}/messages`, {
@@ -649,7 +752,7 @@ export default function Home() {
       .catch(() => {
         setChatMessages(prev => [
           ...prev,
-          { id: Date.now().toString(), user: "You", text: newMsgText, time: "Just now", avatar: "🚀" }
+          { id: Date.now().toString(), user: currentUser ? currentUser.name : "You", text: newMsgText, time: "Just now", avatar: currentUser ? "👤" : "🚀" }
         ]);
       });
 
@@ -1620,6 +1723,27 @@ export default function Home() {
                     <div key={listing.id} className="airbnb-card" style={{ padding: "16px" }}>
                       <div style={{ width: "100%", aspectRatio: "20/19", borderRadius: "var(--radius-xl)", overflow: "hidden", position: "relative" }}>
                         <img src={listing.imageUrl} alt={listing.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <button
+                          onClick={(e) => handleDeleteListing(listing.id, e)}
+                          style={{
+                            position: "absolute",
+                            top: "12px",
+                            right: "12px",
+                            background: "var(--white)",
+                            border: "none",
+                            width: "28px",
+                            height: "28px",
+                            borderRadius: "50%",
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            cursor: "pointer",
+                            boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+                            color: "var(--rausch-dark)"
+                          }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                       <div style={{ marginTop: "12px" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", fontWeight: 600, color: "var(--hof)", gap: "8px" }}>
@@ -1775,15 +1899,129 @@ export default function Home() {
                             <h4 style={{ color: "var(--rausch)", fontSize: "14px", marginBottom: "16px", fontWeight: 700 }}>{day}</h4>
                             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                               {items.map((item, idx) => (
-                                <div key={idx} className="airbnb-card" style={{ padding: "16px", background: "var(--white)" }}>
-                                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px", fontSize: "12px" }}>
+                                <div key={idx} className="airbnb-card" style={{ padding: "16px", background: "var(--white)", position: "relative" }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px", fontSize: "12px", paddingRight: "20px" }}>
                                     <span style={{ color: "var(--rausch)", fontWeight: 700 }}>{item.time}</span>
                                     <span style={{ color: "var(--foggy)" }}>📍 {item.location}</span>
                                   </div>
                                   <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--hof)", marginBottom: "4px" }}>{item.activity}</div>
                                   <div style={{ fontSize: "12px", color: "var(--foggy)" }}>💡 {item.notes}</div>
+                                  
+                                  <button
+                                    onClick={() => handleDeleteCustomActivity(day, idx)}
+                                    style={{
+                                      position: "absolute",
+                                      top: "14px",
+                                      right: "14px",
+                                      background: "transparent",
+                                      border: "none",
+                                      color: "var(--rausch-dark)",
+                                      cursor: "pointer",
+                                      padding: "4px",
+                                      display: "flex",
+                                      alignItems: "center"
+                                    }}
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
                                 </div>
                               ))}
+
+                              {/* Inline Custom Add Form */}
+                              <div style={{ marginTop: "8px" }}>
+                                {activeAddActivityDay === day ? (
+                                  <form
+                                    onSubmit={(e) => handleAddCustomActivity(day, e)}
+                                    style={{
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      gap: "10px",
+                                      padding: "16px",
+                                      background: "var(--grey200)",
+                                      borderRadius: "12px",
+                                      border: "1px solid var(--deco)"
+                                    }}
+                                  >
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                                      <input
+                                        type="text"
+                                        placeholder="Time (e.g. 02:00 PM)"
+                                        value={newActTime}
+                                        onChange={(e) => setNewActTime(e.target.value)}
+                                        className="saas-input"
+                                        style={{ fontSize: "12px", padding: "6px 10px" }}
+                                      />
+                                      <input
+                                        type="text"
+                                        placeholder="Location"
+                                        value={newActLocation}
+                                        onChange={(e) => setNewActLocation(e.target.value)}
+                                        className="saas-input"
+                                        style={{ fontSize: "12px", padding: "6px 10px" }}
+                                      />
+                                    </div>
+                                    <input
+                                      type="text"
+                                      placeholder="Activity Title"
+                                      value={newActTitle}
+                                      onChange={(e) => setNewActTitle(e.target.value)}
+                                      className="saas-input"
+                                      style={{ fontSize: "12px", padding: "6px 10px" }}
+                                      required
+                                    />
+                                    <input
+                                      type="text"
+                                      placeholder="Notes"
+                                      value={newActNotes}
+                                      onChange={(e) => setNewActNotes(e.target.value)}
+                                      className="saas-input"
+                                      style={{ fontSize: "12px", padding: "6px 10px" }}
+                                    />
+                                    <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => setActiveAddActivityDay(null)}
+                                        style={{ background: "transparent", border: "none", fontSize: "12px", cursor: "pointer", color: "var(--foggy)" }}
+                                      >
+                                        Cancel
+                                      </button>
+                                      <button
+                                        type="submit"
+                                        className="airbnb-btn-primary"
+                                        style={{ padding: "4px 12px", fontSize: "12px", minHeight: "28px" }}
+                                      >
+                                        Save
+                                      </button>
+                                    </div>
+                                  </form>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveAddActivityDay(day);
+                                      setNewActTime("");
+                                      setNewActTitle("");
+                                      setNewActLocation("");
+                                      setNewActNotes("");
+                                    }}
+                                    style={{
+                                      background: "transparent",
+                                      border: "1px dashed var(--bobo)",
+                                      borderRadius: "12px",
+                                      color: "var(--rausch-dark)",
+                                      fontSize: "12px",
+                                      fontWeight: 600,
+                                      cursor: "pointer",
+                                      padding: "8px 16px",
+                                      width: "100%",
+                                      textAlign: "center",
+                                      transition: "all 0.15s"
+                                    }}
+                                  >
+                                    + Add Activity
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -2040,6 +2278,22 @@ export default function Home() {
                             <span style={{ fontSize: "10px", background: "var(--grey200)", padding: "2px 6px", borderRadius: "var(--radius-sm)", color: "var(--foggy)", fontWeight: 700 }}>
                               {item.tag}
                             </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteChecklistItem(item.id);
+                              }}
+                              style={{
+                                background: "transparent",
+                                border: "none",
+                                color: "var(--rausch-dark)",
+                                cursor: "pointer",
+                                display: "flex",
+                                padding: "4px"
+                              }}
+                            >
+                              <Trash2 size={13} />
+                            </button>
                           </div>
                         ))}
                       </div>

@@ -654,7 +654,7 @@ export default function Home() {
           {/* Right Header items */}
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <span style={{ fontFamily: "var(--font-cereal)", fontSize: "14px", fontWeight: 600, color: "var(--hof)", cursor: "pointer" }} onClick={() => setHeaderTab("host")}>
-              Airbnb your home
+              Host your home
             </span>
             <Globe size={16} style={{ color: "var(--hof)", cursor: "pointer" }} />
             
@@ -689,7 +689,7 @@ export default function Home() {
       {/* CORE WORKSPACE WRAPPER */}
       <div className="airbnb-container">
 
-        {/* VIEW 1: HOMES (Airbnb Listings Feed) */}
+        {/* VIEW 1: HOMES (Tourgineers Stays Feed) */}
         {headerTab === "homes" && (
           <div>
             {/* HERO PILL SEARCH COMPONENT */}
@@ -1008,7 +1008,7 @@ export default function Home() {
 
             </section>
 
-            {/* CITIES TABS SWITCHER (Airbnb Filter bar style) */}
+            {/* CITIES TABS SWITCHER (Tourgineers Filter bar style) */}
             <section style={{ padding: "1rem 0 2rem", borderBottom: "1px solid var(--deco)" }}>
               <div style={{ display: "flex", gap: "16px", overflowX: "auto", paddingBottom: "8px", justifyContent: "center" }}>
                 <button
@@ -1193,7 +1193,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* VIEW 3: HOST (Airbnb Host Admin Panel) */}
+        {/* VIEW 3: HOST (Host Admin Panel) */}
         {headerTab === "host" && (
           <div style={{ padding: "3rem 0 4rem" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "40px", borderBottom: "1px solid var(--deco)", paddingBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
@@ -1201,7 +1201,7 @@ export default function Home() {
                 <span style={{ color: "var(--rausch-dark)", fontWeight: 700, fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                   Host Console
                 </span>
-                <h1 style={{ fontSize: "32px", fontWeight: 700, marginTop: "6px" }}>Airbnb your home</h1>
+                <h1 style={{ fontSize: "32px", fontWeight: 700, marginTop: "6px" }}>Host your home</h1>
                 <p style={{ color: "var(--foggy)", fontSize: "14px", marginTop: "4px" }}>
                   Fill all sections to publish your property listing. It will instantly show up when searched or filtered in the main feeds.
                 </p>

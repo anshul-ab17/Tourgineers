@@ -1,6 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff5a5f" />
+      <stop offset="100%" stop-color="#008489" />
+    </linearGradient>
+  </defs>
   <circle cx="16" cy="16" r="14" fill="#ffffff" />
-  <circle cx="16" cy="16" r="12" fill="none" stroke="#d87a38" stroke-width="2.5" />
-  <polygon points="21.65 10.35 18.83 18.83 10.35 21.65 13.17 13.17" fill="#ffd3ac" stroke="#d87a38" stroke-width="2" stroke-linejoin="round" />
-  <circle cx="16" cy="16" r="1.5" fill="#d87a38" />
+  <circle cx="16" cy="16" r="12" fill="none" stroke="url(#brandGrad)" stroke-width="2.5" />
+  <polygon points="21.65 10.35 18.83 18.83 10.35 21.65 13.17 13.17" fill="#f7f7f7" stroke="url(#brandGrad)" stroke-width="2" stroke-linejoin="round" />
+  <circle cx="16" cy="16" r="1.5" fill="#ff5a5f" />
 </svg>

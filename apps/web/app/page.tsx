@@ -260,6 +260,54 @@ export default function Home() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Dynamic Browser Tab Title and Favicon based on active Header Tab
+  useEffect(() => {
+    // 1. Get or create favicon link element
+    let link = document.querySelector("link[rel*='icon']") as HTMLLinkElement | null;
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "shortcut icon";
+      document.head.appendChild(link);
+    }
+
+    // 2. Set dynamic title and dynamic SVG favicon
+    if (headerTab === "homes") {
+      document.title = "Search Stays & Destinations | Tourngineers";
+      // Search favicon: magnifying glass inside a premium coral circle
+      link.href = `data:image/svg+xml;utf8,${encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+          <circle cx="16" cy="16" r="14" fill="#ffffff" />
+          <circle cx="16" cy="16" r="12" fill="none" stroke="#ff5a5f" stroke-width="2.5" />
+          <circle cx="14" cy="14" r="5" fill="none" stroke="#ff5a5f" stroke-width="2" />
+          <line x1="17.5" y1="17.5" x2="23" y2="23" stroke="#ff5a5f" stroke-width="2.5" stroke-linecap="round" />
+        </svg>`
+      )}`;
+    } else if (headerTab === "planner") {
+      document.title = "Collaborative Planner Console | Tourngineers";
+      // Planner favicon: compass with teal accents
+      link.href = `data:image/svg+xml;utf8,${encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+          <circle cx="16" cy="16" r="14" fill="#ffffff" />
+          <circle cx="16" cy="16" r="12" fill="none" stroke="#008489" stroke-width="2.5" />
+          <polygon points="21.65 10.35 18.83 18.83 10.35 21.65 13.17 13.17" fill="#e6fcfc" stroke="#008489" stroke-width="2" stroke-linejoin="round" />
+          <circle cx="16" cy="16" r="1.5" fill="#008489" />
+        </svg>`
+      )}`;
+    } else if (headerTab === "host") {
+      document.title = "Host Your Home | Tourngineers";
+      // Host favicon: cozy house structure
+      link.href = `data:image/svg+xml;utf8,${encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+          <circle cx="16" cy="16" r="14" fill="#ffffff" />
+          <circle cx="16" cy="16" r="12" fill="none" stroke="#484848" stroke-width="2.5" />
+          <path d="M10 16 L16 11 L22 16 L22 22 C22 22.5 21.5 23 21 23 L11 23 C10.5 23 10 22.5 10 22 Z" fill="#ebebeb" stroke="#484848" stroke-width="2" stroke-linejoin="round" />
+          <rect x="14" y="18" width="4" height="5" fill="#484848" />
+        </svg>`
+      )}`;
+    }
+  }, [headerTab]);
+
+
   // Predefined realistic city listings database (6 properties for each city)
   const initialCityListingsData: Record<string, ListingCard[]> = {
     Amsterdam: [

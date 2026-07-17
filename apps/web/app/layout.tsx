@@ -15,7 +15,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Tourngineers | AI-Powered Collaborative Travel Planner",
+  title: "Tourngineers",
   description: "Plan itineraries, track expenses, generate checklists, and map out your next adventure with friends in real-time.",
 };
 

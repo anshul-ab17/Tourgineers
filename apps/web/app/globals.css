@@ -552,3 +552,17 @@ p {
   cursor: default;
   background: transparent;
 }
+
+/* Footer Social Icons styling */
+.footer-social-link {
+  color: var(--foggy);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.footer-social-link:hover {
+  color: var(--rausch-dark);
+  transform: translateY(-2px);
+}
